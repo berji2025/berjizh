@@ -7,173 +7,321 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: #d4e8cf; font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
-        .game-container { width: 100%; max-width: 500px; height: 100vh; padding: 15px; display: flex; flex-direction: column; }
-        .preview-area { background: #e9f0e3; border-radius: 40px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; position: relative; }
+        body { 
+            margin: 0; 
+            background: #d4e8cf; 
+            font-family: 'Segoe UI', 'Roboto', 'Noto Sans TC', sans-serif; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100vh;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-area { 
+            background: #e9f0e3; 
+            border-radius: 40px; 
+            padding: 20px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
         .preview-title { font-size: 1.4rem; font-weight: bold; color: #4c6e2c; margin-bottom: 10px; text-align: center; }
-        canvas { width: 100%; flex: 1; background: linear-gradient(to bottom, #f0f9ff, #ffffff); border-radius: 30px; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
-        .preview-status { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 20px; text-align: center; }
+        
+        /* 畫布區域 */
+        #plantCanvas { 
+            width: 100%; 
+            flex: 1;
+            background: linear-gradient(to bottom, #f0f9ff, #ffffff); 
+            border-radius: 30px; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
+        }
+
+        .preview-status { 
+            margin-top: 15px; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.7); 
+            border-radius: 20px; 
+            text-align: center;
+        }
+
         .progress-bar { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 8px; overflow: hidden; }
         .progress-fill { height: 100%; background: #7ca85a; width: 0%; transition: width 0.8s ease; }
+
         .preview-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .action-btn { padding: 15px; border: none; border-radius: 25px; background: #7ca85a; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #5e8442; font-size: 1rem; }
+        .action-btn { 
+            padding: 15px; 
+            border: none; 
+            border-radius: 25px; 
+            background: #7ca85a; 
+            color: white; 
+            font-weight: bold; 
+            cursor: pointer;
+            box-shadow: 0 4px 0 #5e8442;
+            font-size: 1rem;
+        }
         .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #5e8442; }
-        #bloomLink { display: none; margin-top: 15px; background: #ff7675; color: white; padding: 15px; border-radius: 20px; text-decoration: none; font-weight: bold; text-align: center; animation: pulse 1.5s infinite; }
+
+        /* 領獎按鈕 */
+        #bloomLink { 
+            display: none; margin-top: 15px; background: #ff7675; color: white; padding: 15px; 
+            border-radius: 20px; text-decoration: none; font-weight: bold; text-align: center;
+            animation: pulse 1.5s infinite;
+        }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
-        /* 答題層樣式省略... */
-        #quizOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
-        .quiz-box { background: white; width: 100%; max-width: 400px; border-radius: 30px; padding: 25px; animation: popIn 0.3s ease-out; }
-        .option-btn { display: block; width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #7ca85a; border-radius: 15px; background: none; color: #4c6e2c; font-weight: bold; cursor: pointer; text-align: left; }
+
+        /* 答題彈窗 */
+        #quizOverlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+        }
+        .quiz-box { 
+            background: white; width: 100%; max-width: 400px; border-radius: 30px; padding: 25px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .option-btn { 
+            display: block; width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #7ca85a;
+            border-radius: 15px; background: none; color: #4c6e2c; font-weight: bold; cursor: pointer; text-align: left;
+        }
     </style>
 </head>
 <body>
 
 <div class="game-container">
     <div class="preview-area">
-        <div class="preview-title" id="userName">護膚花園</div>
+        <div class="preview-title" id="userName">載入花園中...</div>
+        
         <canvas id="plantCanvas"></canvas>
+
         <div class="preview-status">
             <div id="waterStatus">水分: 0 / 660</div>
             <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
-            <div id="stageDesc" style="margin-top:5px; color:#666;">階段：種子</div>
+            <div id="stageDesc" style="margin-top:5px; color:#666; font-size: 0.9rem;">階段：種子</div>
         </div>
+
         <div class="preview-actions">
-            <button class="action-btn" onclick="handleDailyWater()">🌿 澆水 +20</button>
-            <button class="action-btn" onclick="showQuiz()">💡 答題 +50</button>
+            <button class="action-btn" onclick="handleDailyWater()">🌿 日常澆水</button>
+            <button class="action-btn" onclick="showQuiz()">💡 知識挑戰</button>
         </div>
-        <a id="bloomLink" href="#" target="_blank">🌸 領取贈品兌換券</a>
+
+        <a id="bloomLink" href="#" target="_blank">🌸 領取專屬贈品</a>
     </div>
 </div>
 
-<div id="quizOverlay"><div class="quiz-box"><h3 style="color:#4c6e2c;">護膚小知識</h3><p id="quizQuestion"></p><div id="quizOptions"></div></div></div>
+<div id="quizOverlay">
+    <div class="quiz-box">
+        <h3 style="color:#4c6e2c; margin-top:0;">護膚小知識</h3>
+        <p id="quizQuestion" style="line-height:1.6; min-height: 50px;"></p>
+        <div id="quizOptions"></div>
+        <button onclick="document.getElementById('quizOverlay').style.display='none'" style="margin-top:10px; border:none; background:none; color:#999; width:100%; cursor:pointer;">取消</button>
+    </div>
+</div>
 
 <script src="liff-init.js"></script>
 <script>
-    // 遊戲核心數據
-    let player = { water: 0, lastDaily: '', hasBloomed: false };
-    let gameSettings = JSON.parse(localStorage.getItem('flower_game_settings')) || { targetWater: 660, dailyWaterVal: 20, quizWaterVal: 50, giftLink: "" };
-    let questions = JSON.parse(localStorage.getItem('flower_advanced_questions')) || [];
+    // 1. 初始化資料結構
+    let player = { 
+        water: 0, 
+        lastDaily: '', 
+        hasBloomed: false, 
+        plantSeed: Math.random() // 用來固定每個人的植物長相
+    };
+    
+    let gameSettings = JSON.parse(localStorage.getItem('flower_game_settings')) || { 
+        targetWater: 660, 
+        dailyWaterVal: 20, 
+        quizWaterVal: 50, 
+        giftLink: "" 
+    };
 
     const canvas = document.getElementById('plantCanvas');
     const ctx = canvas.getContext('2d');
     let time = 0;
 
-    // LIFF 登入成功後執行
+    // 2. LINE LIFF 串接
     window.addEventListener('liff-ready', () => {
         liff.getProfile().then(profile => {
             player.lineId = profile.userId;
             document.getElementById('userName').innerText = profile.displayName + " 的花園";
-            loadData();
-            animate();
+            loadPlayerData();
+            animate(); // 啟動動態繪圖
         });
     });
 
-    function loadData() {
-        const saved = JSON.parse(localStorage.getItem('flower_players')) || {};
-        if (saved[player.lineId]) player = { ...player, ...saved[player.lineId] };
+    function loadPlayerData() {
+        const allPlayers = JSON.parse(localStorage.getItem('flower_players')) || {};
+        if (allPlayers[player.lineId]) {
+            player = { ...player, ...allPlayers[player.lineId] };
+        }
         updateUI();
     }
 
+    function savePlayerData() {
+        const allPlayers = JSON.parse(localStorage.getItem('flower_players')) || {};
+        allPlayers[player.lineId] = player;
+        localStorage.setItem('flower_players', JSON.stringify(allPlayers));
+    }
+
+    // 3. 遊戲互動邏輯
     function handleDailyWater() {
         const today = new Date().toLocaleDateString();
         if (player.lastDaily === today) return alert("今天澆過水囉！");
         player.water += gameSettings.dailyWaterVal;
         player.lastDaily = today;
-        saveAndRefresh();
+        checkBloom();
+        savePlayerData();
+        updateUI();
     }
 
     function showQuiz() {
-        if (!questions.length) return alert("後台尚未設定題庫！");
-        const q = questions[Math.floor(Math.random() * questions.length)];
-        document.getElementById('quizQuestion').innerText = q.q;
+        // 從與後台相同的 Key 讀取題目
+        const storedQs = localStorage.getItem('flower_advanced_questions');
+        const questions = storedQs ? JSON.parse(storedQs) : [];
+        
+        if (questions.length === 0) return alert("目前沒有題庫，請至後台設定！");
+        
+        const qData = questions[Math.floor(Math.random() * questions.length)];
+        document.getElementById('quizQuestion').innerText = qData.q;
         const optArea = document.getElementById('quizOptions');
         optArea.innerHTML = '';
-        q.o.forEach(opt => {
+
+        // 隨機排列選項
+        const shuffled = [...qData.o].sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerText = opt;
             btn.onclick = () => {
-                if (opt === q.a) { player.water += gameSettings.quizWaterVal; alert("答對了！"); }
-                else alert("答錯囉！");
+                if (opt === qData.a) {
+                    player.water += gameSettings.quizWaterVal;
+                    alert("答對了！水分增加。");
+                    checkBloom();
+                    savePlayerData();
+                    updateUI();
+                } else {
+                    alert("答錯囉，正確答案是：" + qData.a);
+                }
                 document.getElementById('quizOverlay').style.display = 'none';
-                saveAndRefresh();
             };
             optArea.appendChild(btn);
         });
         document.getElementById('quizOverlay').style.display = 'flex';
     }
 
-    function saveAndRefresh() {
-        if (player.water >= gameSettings.targetWater) { player.water = gameSettings.targetWater; player.hasBloomed = true; }
-        const saved = JSON.parse(localStorage.getItem('flower_players')) || {};
-        saved[player.lineId] = player;
-        localStorage.setItem('flower_players', JSON.stringify(saved));
-        updateUI();
+    function checkBloom() {
+        if (player.water >= gameSettings.targetWater) {
+            player.water = gameSettings.targetWater;
+            player.hasBloomed = true;
+        }
     }
 
     function updateUI() {
         const pct = (player.water / gameSettings.targetWater) * 100;
         document.getElementById('progressFill').style.width = pct + '%';
         document.getElementById('waterStatus').innerText = `水分: ${player.water} / ${gameSettings.targetWater}`;
+        
+        let stage = "種子";
+        if (pct > 20) stage = "發芽";
+        if (pct > 50) stage = "成長中";
+        if (pct > 85) stage = "結苞";
+        if (pct >= 100) stage = "盛開！";
+        document.getElementById('stageDesc').innerText = `階段：${stage}`;
+
         if (player.hasBloomed) {
             const link = document.getElementById('bloomLink');
             link.style.display = 'block';
-            link.href = gameSettings.giftLink;
+            link.href = gameSettings.giftLink || "#";
         }
     }
 
-    // 動態植物繪圖演算法 (回歸版本)
+    // 4. 動態植物 Canvas 繪圖邏輯 (恢復原檔細節)
     function animate() {
         time += 0.02;
         const w = canvas.width = canvas.offsetWidth;
         const h = canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0, 0, w, h);
+        ctx.clearRect(0,0,w,h);
         
         const pct = player.water / gameSettings.targetWater;
         const centerX = w / 2;
-        const baseY = h - 50;
+        const baseY = h - 60;
 
-        // 畫盆栽
+        // 繪製盆栽
         ctx.fillStyle = '#8d6e63';
         ctx.beginPath();
-        ctx.moveTo(centerX-40, baseY); ctx.lineTo(centerX+40, baseY);
-        ctx.lineTo(centerX+30, baseY+40); ctx.lineTo(centerX-30, baseY+40);
+        ctx.moveTo(centerX-45, baseY); ctx.lineTo(centerX+45, baseY);
+        ctx.lineTo(centerX+35, baseY+45); ctx.lineTo(centerX-35, baseY+45);
         ctx.fill();
 
         if (pct > 0.05) {
-            drawBranch(centerX, baseY, -Math.PI/2, pct * 150, 8 * pct);
+            // 使用隨機種子固定型態
+            let seed = player.plantSeed || 0.5;
+            function seededRandom() {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280;
+            }
+
+            function drawBranch(x, y, angle, length, depth) {
+                if (depth <= 0) return;
+                
+                // 動態搖擺效果
+                const sway = Math.sin(time + depth) * 0.05;
+                const tx = x + Math.cos(angle + sway) * length * (0.3 + pct * 0.7);
+                const ty = y + Math.sin(angle + sway) * length * (0.3 + pct * 0.7);
+
+                ctx.strokeStyle = '#4caf50';
+                ctx.lineWidth = depth * 1.8;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(tx, ty);
+                ctx.stroke();
+
+                // 繪製葉子 (在末梢)
+                if (depth < 3) {
+                    ctx.fillStyle = '#81c784';
+                    ctx.beginPath();
+                    ctx.ellipse(tx, ty, 10, 5, angle + sway, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 如果盛開，畫出花朵
+                    if (player.hasBloomed) {
+                        ctx.fillStyle = '#ff80ab';
+                        ctx.beginPath();
+                        ctx.arc(tx, ty, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        // 花芯
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.arc(tx, ty, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                drawBranch(tx, ty, angle - 0.5, length * 0.7, depth - 1);
+                drawBranch(tx, ty, angle + 0.5, length * 0.7, depth - 1);
+            }
+
+            // 啟動遞迴繪圖
+            drawBranch(centerX, baseY, -Math.PI/2, 110 * pct, 5);
         }
+        
         requestAnimationFrame(animate);
     }
 
-    function drawBranch(x, y, angle, len, thickness) {
-        if (len < 5) return;
-        ctx.beginPath();
-        ctx.strokeStyle = '#4caf50';
-        ctx.lineWidth = thickness;
-        ctx.lineCap = 'round';
-        ctx.moveTo(x, y);
-        const sway = Math.sin(time) * 0.05;
-        const nx = x + Math.cos(angle + sway) * len * 0.5;
-        const ny = y + Math.sin(angle + sway) * len * 0.5;
-        ctx.lineTo(nx, ny);
-        ctx.stroke();
-
-        // 畫葉子
-        if (len < 30) {
-            ctx.fillStyle = '#81c784';
-            ctx.beginPath();
-            ctx.ellipse(nx, ny, 10, 5, angle + sway, 0, Math.PI*2);
-            ctx.fill();
-            if (player.hasBloomed) {
-                ctx.fillStyle = '#ff80ab';
-                ctx.beginPath(); ctx.arc(nx, ny, 8, 0, Math.PI*2); ctx.fill();
-            }
-        }
-
-        drawBranch(nx, ny, angle - 0.4, len * 0.7, thickness * 0.7);
-        drawBranch(nx, ny, angle + 0.4, len * 0.7, thickness * 0.7);
-    }
+    window.onresize = updateUI;
 </script>
 </body>
 </html>
