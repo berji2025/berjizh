@@ -1,16 +1,27 @@
 function updateQuestions() {
     const text = document.getElementById('questionsTextarea').value;
     const lines = text.trim().split('\n');
-    const newQs = lines.map(line => {
-        const parts = line.split('|');
-        return { 
-            q: parts[0], 
-            a: parts[1], 
-            o: parts[2] ? parts[2].split(',') : [] 
-        };
-    });
+    const newQs = [];
     
-    // 必須使用與 index.html 相同的 Key
+    lines.forEach(line => {
+        if (!line.trim()) return;
+        const parts = line.split('|');
+        if (parts.length >= 2) {
+            newQs.push({
+                q: parts[0],                 // 問題
+                a: parts[1],                 // 正確答案
+                o: parts[2] ? parts[2].split(',') : [parts[1]] // 選項 (如果沒給選項就只放答案)
+            });
+        }
+    });
+
+    // 關鍵：將名稱統一為遊戲端讀取的 Key
     localStorage.setItem('flower_advanced_questions', JSON.stringify(newQs));
-    alert("題庫已更新！請在手機上開啟遊戲確認。");
+    
+    // 同時更新目前預覽中的題庫變數
+    if (typeof advancedQuestions !== 'undefined') {
+        advancedQuestions = newQs;
+    }
+    
+    alert("題庫已成功更新！請至遊戲網頁重新整理即可看到新題目。");
 }
