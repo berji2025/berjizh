@@ -1,302 +1,179 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8 Snake">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>護膚花園 - 您的專屬花園</title>
+    <title>護膚花園 - 您的專屬植物</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; 
-            background: #d4e8cf; 
-            font-family: 'Segoe UI', 'Roboto', 'Noto Sans TC', sans-serif; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        /* 玩家遊戲容器：全螢幕化 */
-        .game-container {
-            width: 100%;
-            max-width: 500px; /* 手機顯示的最佳寬度 */
-            padding: 15px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .preview-area { 
-            background: #e9f0e3; 
-            border-radius: 40px; 
-            padding: 20px; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .preview-title { font-size: 1.4rem; font-weight: bold; color: #4c6e2c; margin-bottom: 15px; text-align: center; }
-        
-        /* 畫布區域 */
-        #previewCanvas { 
-            width: 100%; 
-            background: linear-gradient(to bottom, #f0f9ff, #ffffff); 
-            border-radius: 30px; 
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
-            flex: 1;
-        }
-
-        .preview-status { 
-            margin-top: 15px; 
-            padding: 15px; 
-            background: rgba(255,255,255,0.7); 
-            border-radius: 20px; 
-            text-align: center;
-        }
-
+        body { margin: 0; background: #d4e8cf; font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        .game-container { width: 100%; max-width: 500px; height: 100vh; padding: 15px; display: flex; flex-direction: column; }
+        .preview-area { background: #e9f0e3; border-radius: 40px; padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); flex: 1; display: flex; flex-direction: column; position: relative; }
+        .preview-title { font-size: 1.4rem; font-weight: bold; color: #4c6e2c; margin-bottom: 10px; text-align: center; }
+        canvas { width: 100%; flex: 1; background: linear-gradient(to bottom, #f0f9ff, #ffffff); border-radius: 30px; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
+        .preview-status { margin-top: 15px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 20px; text-align: center; }
         .progress-bar { width: 100%; height: 12px; background: #eee; border-radius: 10px; margin-top: 8px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #7ca85a; width: 0%; transition: width 0.5s ease; }
-
+        .progress-fill { height: 100%; background: #7ca85a; width: 0%; transition: width 0.8s ease; }
         .preview-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .action-btn { 
-            padding: 12px; 
-            border: none; 
-            border-radius: 25px; 
-            background: #7ca85a; 
-            color: white; 
-            font-weight: bold; 
-            cursor: pointer;
-            box-shadow: 0 4px 0 #5e8442;
-        }
+        .action-btn { padding: 15px; border: none; border-radius: 25px; background: #7ca85a; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #5e8442; font-size: 1rem; }
         .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #5e8442; }
-        .action-btn:disabled { background: #ccc; box-shadow: 0 4px 0 #999; }
-
-        /* 答題彈窗 */
-        #quizOverlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
-        }
-        .quiz-box { 
-            background: white; width: 100%; max-width: 400px; border-radius: 30px; padding: 25px; 
-            position: relative; animation: popIn 0.3s ease-out;
-        }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .option-btn { 
-            display: block; width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #7ca85a;
-            border-radius: 15px; background: none; color: #4c6e2c; font-weight: bold; cursor: pointer; text-align: left;
-        }
-        .option-btn:hover { background: #f0f9e8; }
-
-        #bloomLink { 
-            display: none; margin-top: 15px; background: #ff7675; color: white; padding: 15px; 
-            border-radius: 20px; text-decoration: none; font-weight: bold; text-align: center;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #bloomLink { display: none; margin-top: 15px; background: #ff7675; color: white; padding: 15px; border-radius: 20px; text-decoration: none; font-weight: bold; text-align: center; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        /* 答題層樣式省略... */
+        #quizOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .quiz-box { background: white; width: 100%; max-width: 400px; border-radius: 30px; padding: 25px; animation: popIn 0.3s ease-out; }
+        .option-btn { display: block; width: 100%; padding: 12px; margin-bottom: 10px; border: 2px solid #7ca85a; border-radius: 15px; background: none; color: #4c6e2c; font-weight: bold; cursor: pointer; text-align: left; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
     <div class="preview-area">
-        <div class="preview-title" id="userName">載入花園中...</div>
-        
-        <canvas id="previewCanvas"></canvas>
-
+        <div class="preview-title" id="userName">護膚花園</div>
+        <canvas id="plantCanvas"></canvas>
         <div class="preview-status">
             <div id="waterStatus">水分: 0 / 660</div>
             <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
-            <div id="plantStageDesc" style="font-size: 0.9rem; margin-top: 5px; color: #666;">階段：種子</div>
+            <div id="stageDesc" style="margin-top:5px; color:#666;">階段：種子</div>
         </div>
-
         <div class="preview-actions">
-            <button class="action-btn" id="dailyWaterBtn" onclick="handleDailyWater()">🌿 日常澆水 (+20)</button>
-            <button class="action-btn" id="quizBtn" onclick="showQuiz()">💡 知識挑戰 (+50)</button>
+            <button class="action-btn" onclick="handleDailyWater()">🌿 澆水 +20</button>
+            <button class="action-btn" onclick="showQuiz()">💡 答題 +50</button>
         </div>
-
-        <a id="bloomLink" href="#" target="_blank">🌸 點我領取中獎贈品！</a>
+        <a id="bloomLink" href="#" target="_blank">🌸 領取贈品兌換券</a>
     </div>
 </div>
 
-<div id="quizOverlay">
-    <div class="quiz-box">
-        <h3 id="quizTitle" style="color:#4c6e2c;">護膚知識問答</h3>
-        <p id="quizQuestion" style="line-height:1.5;"></p>
-        <div id="quizOptions"></div>
-        <button onclick="document.getElementById('quizOverlay').style.display='none'" style="margin-top:10px; background:none; border:none; color:#999; cursor:pointer; width:100%;">取消離開</button>
-    </div>
-</div>
+<div id="quizOverlay"><div class="quiz-box"><h3 style="color:#4c6e2c;">護膚小知識</h3><p id="quizQuestion"></p><div id="quizOptions"></div></div></div>
 
 <script src="liff-init.js"></script>
 <script>
-    // 遊戲基礎設定（會與 admin.html 同步）
-    let gameSettings = JSON.parse(localStorage.getItem('flower_game_settings')) || {
-        targetWater: 660,
-        dailyWaterVal: 20,
-        quizWaterVal: 50,
-        giftLink: "https://www.berji-skincare.com.tw/"
-    };
+    // 遊戲核心數據
+    let player = { water: 0, lastDaily: '', hasBloomed: false };
+    let gameSettings = JSON.parse(localStorage.getItem('flower_game_settings')) || { targetWater: 660, dailyWaterVal: 20, quizWaterVal: 50, giftLink: "" };
+    let questions = JSON.parse(localStorage.getItem('flower_advanced_questions')) || [];
 
-    let questions = JSON.parse(localStorage.getItem('flower_advanced_questions')) || [
-        { q: "護膚的第一步通常是什麼？", a: "清潔", o: ["清潔", "精華", "乳液"] }
-    ];
+    const canvas = document.getElementById('plantCanvas');
+    const ctx = canvas.getContext('2d');
+    let time = 0;
 
-    let player = {
-        lineId: "Guest",
-        name: "遊客",
-        water: 0,
-        lastDaily: "",
-        hasBloomed: false
-    };
-
-    // LIFF 準備就緒
+    // LIFF 登入成功後執行
     window.addEventListener('liff-ready', () => {
         liff.getProfile().then(profile => {
             player.lineId = profile.userId;
-            player.name = profile.displayName;
-            document.getElementById('userName').innerText = `${player.name} 的護膚花園`;
-            loadPlayerData();
+            document.getElementById('userName').innerText = profile.displayName + " 的花園";
+            loadData();
+            animate();
         });
     });
 
-    function loadPlayerData() {
+    function loadData() {
         const saved = JSON.parse(localStorage.getItem('flower_players')) || {};
-        if (saved[player.lineId]) {
-            player = { ...player, ...saved[player.lineId] };
-        }
+        if (saved[player.lineId]) player = { ...player, ...saved[player.lineId] };
         updateUI();
     }
 
-    function savePlayerData() {
-        const saved = JSON.parse(localStorage.getItem('flower_players')) || {};
-        saved[player.lineId] = player;
-        localStorage.setItem('flower_players', JSON.stringify(saved));
-    }
-
-    // 遊戲邏輯
     function handleDailyWater() {
         const today = new Date().toLocaleDateString();
-        if (player.lastDaily === today) {
-            alert("今天已經澆過日常水囉！");
-            return;
-        }
+        if (player.lastDaily === today) return alert("今天澆過水囉！");
         player.water += gameSettings.dailyWaterVal;
         player.lastDaily = today;
-        checkBloom();
-        savePlayerData();
-        updateUI();
-        triggerRain();
+        saveAndRefresh();
     }
 
     function showQuiz() {
+        if (!questions.length) return alert("後台尚未設定題庫！");
         const q = questions[Math.floor(Math.random() * questions.length)];
         document.getElementById('quizQuestion').innerText = q.q;
-        const optionsDiv = document.getElementById('quizOptions');
-        optionsDiv.innerHTML = '';
+        const optArea = document.getElementById('quizOptions');
+        optArea.innerHTML = '';
         q.o.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerText = opt;
             btn.onclick = () => {
-                if (opt === q.a) {
-                    player.water += gameSettings.quizWaterVal;
-                    alert("答對了！水分 +50");
-                    checkBloom();
-                    savePlayerData();
-                    updateUI();
-                    triggerRain();
-                } else {
-                    alert("答錯了，再接再厲！");
-                }
+                if (opt === q.a) { player.water += gameSettings.quizWaterVal; alert("答對了！"); }
+                else alert("答錯囉！");
                 document.getElementById('quizOverlay').style.display = 'none';
+                saveAndRefresh();
             };
-            optionsDiv.appendChild(btn);
+            optArea.appendChild(btn);
         });
         document.getElementById('quizOverlay').style.display = 'flex';
     }
 
-    function checkBloom() {
-        if (player.water >= gameSettings.targetWater) {
-            player.water = gameSettings.targetWater;
-            player.hasBloomed = true;
-        }
+    function saveAndRefresh() {
+        if (player.water >= gameSettings.targetWater) { player.water = gameSettings.targetWater; player.hasBloomed = true; }
+        const saved = JSON.parse(localStorage.getItem('flower_players')) || {};
+        saved[player.lineId] = player;
+        localStorage.setItem('flower_players', JSON.stringify(saved));
+        updateUI();
     }
 
     function updateUI() {
-        const water = player.water;
-        const target = gameSettings.targetWater;
-        document.getElementById('waterStatus').innerText = `水分: ${water} / ${target}`;
-        const pct = (water / target) * 100;
+        const pct = (player.water / gameSettings.targetWater) * 100;
         document.getElementById('progressFill').style.width = pct + '%';
-        
-        // 領獎按鈕
+        document.getElementById('waterStatus').innerText = `水分: ${player.water} / ${gameSettings.targetWater}`;
         if (player.hasBloomed) {
             const link = document.getElementById('bloomLink');
             link.style.display = 'block';
             link.href = gameSettings.giftLink;
         }
-
-        // 階段描述
-        let stage = "種子";
-        if (pct > 20) stage = "發芽";
-        if (pct > 50) stage = "成長中";
-        if (pct > 80) stage = "結苞";
-        if (pct >= 100) stage = "盛開！";
-        document.getElementById('plantStageDesc').innerText = `階段：${stage}`;
-        
-        drawPlant(pct);
     }
 
-    // Canvas 繪圖
-    const canvas = document.getElementById('previewCanvas');
-    const ctx = canvas.getContext('2d');
-    function drawPlant(pct) {
+    // 動態植物繪圖演算法 (回歸版本)
+    function animate() {
+        time += 0.02;
         const w = canvas.width = canvas.offsetWidth;
         const h = canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0,0,w,h);
+        ctx.clearRect(0, 0, w, h);
         
+        const pct = player.water / gameSettings.targetWater;
         const centerX = w / 2;
-        const baseY = h - 60;
-        
+        const baseY = h - 50;
+
         // 畫盆栽
         ctx.fillStyle = '#8d6e63';
         ctx.beginPath();
-        ctx.moveTo(centerX-40, baseY);
-        ctx.lineTo(centerX+40, baseY);
-        ctx.lineTo(centerX+30, baseY+40);
-        ctx.lineTo(centerX-30, baseY+40);
+        ctx.moveTo(centerX-40, baseY); ctx.lineTo(centerX+40, baseY);
+        ctx.lineTo(centerX+30, baseY+40); ctx.lineTo(centerX-30, baseY+40);
         ctx.fill();
 
-        // 畫植物（依進度成長）
-        const height = (pct / 100) * (h * 0.5);
-        ctx.strokeStyle = '#4caf50';
-        ctx.lineWidth = 8;
-        ctx.lineCap = 'round';
+        if (pct > 0.05) {
+            drawBranch(centerX, baseY, -Math.PI/2, pct * 150, 8 * pct);
+        }
+        requestAnimationFrame(animate);
+    }
+
+    function drawBranch(x, y, angle, len, thickness) {
+        if (len < 5) return;
         ctx.beginPath();
-        ctx.moveTo(centerX, baseY);
-        ctx.lineTo(centerX, baseY - height);
+        ctx.strokeStyle = '#4caf50';
+        ctx.lineWidth = thickness;
+        ctx.lineCap = 'round';
+        ctx.moveTo(x, y);
+        const sway = Math.sin(time) * 0.05;
+        const nx = x + Math.cos(angle + sway) * len * 0.5;
+        const ny = y + Math.sin(angle + sway) * len * 0.5;
+        ctx.lineTo(nx, ny);
         ctx.stroke();
 
-        if (pct >= 100) {
-            // 畫朵花
-            ctx.fillStyle = '#ff4081';
+        // 畫葉子
+        if (len < 30) {
+            ctx.fillStyle = '#81c784';
             ctx.beginPath();
-            ctx.arc(centerX, baseY - height, 20, 0, Math.PI*2);
+            ctx.ellipse(nx, ny, 10, 5, angle + sway, 0, Math.PI*2);
             ctx.fill();
+            if (player.hasBloomed) {
+                ctx.fillStyle = '#ff80ab';
+                ctx.beginPath(); ctx.arc(nx, ny, 8, 0, Math.PI*2); ctx.fill();
+            }
         }
-    }
 
-    function triggerRain() {
-        // 這裡可以加入簡單的下雨效果動畫
+        drawBranch(nx, ny, angle - 0.4, len * 0.7, thickness * 0.7);
+        drawBranch(nx, ny, angle + 0.4, len * 0.7, thickness * 0.7);
     }
-
-    window.onresize = () => updateUI();
-    // 初始化
-    setTimeout(updateUI, 500);
 </script>
 </body>
 </html>
