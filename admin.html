@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>護膚花園 - 管理後台</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #d4e8cf; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .admin-container { max-width: 1200px; margin: 0 auto; background: #fffcf0; border-radius: 48px; padding: 24px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        .admin-title { font-size: 1.8rem; font-weight: bold; color: #4c6e2c; margin-bottom: 20px; }
+        .admin-section { margin-bottom: 28px; border-bottom: 2px dashed #e2cfaa; padding-bottom: 18px; }
+        .flex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        input, textarea, select { padding: 8px 12px; border-radius: 40px; border: 1px solid #c9aa6f; background: white; }
+        .admin-btn { background: #7ca85a; color: white; border: none; padding: 8px 18px; border-radius: 40px; cursor: pointer; }
+        .admin-btn-danger { background: #c73f1e; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; }
+        th, td { padding: 8px 5px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #e9dbbd; }
+        .game-link-box { background: #e9e2cf; border-radius: 40px; padding: 12px; text-align: center; margin-top: 8px; }
+        textarea { width: 100%; font-family: monospace; }
+    </style>
+</head>
+<body>
+<div class="admin-container">
+    <div class="admin-title">🌸 護膚花園・獨立管理後台</div>
+    <div class="admin-section">
+        <div class="admin-title">🔗 玩家遊戲連結</div>
+        <div class="game-link-box">
+            <a href="#" id="fixedGameLink" target="_blank">https://berji2025.github.io/berjizh/</a>
+            <button id="copyLinkBtn" class="admin-btn">📋 複製連結</button>
+        </div>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">🎨 植物外觀設定</div>
+        <div class="flex-row">
+            <div><label>🌿 莖顏色</label><input type="color" id="stemColor" value="#5a8f4c"></div>
+            <div><label>🍃 葉子顏色</label><input type="color" id="leafColor" value="#6fbf4c"></div>
+            <div><label>🌸 花朵主色</label><input type="color" id="flowerColor" value="#ffaa88"></div>
+            <div><label>🌸 花蕊顏色</label><input type="color" id="stamenColor" value="#dd8844"></div>
+            <div><label>🌱 花種</label><select id="flowerTypeSelect"><option value="rose">玫瑰</option><option value="cherry">櫻花</option><option value="sunflower">向日葵</option><option value="lotus">蓮花</option></select></div>
+        </div>
+        <button id="savePlantAppearanceBtn" class="admin-btn">💾 儲存外觀</button>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">📋 玩家資料庫</div>
+        <button id="exportDataBtn" class="admin-btn">📥 匯出備份</button>
+        <button id="importDataBtn" class="admin-btn">📤 匯入還原</button>
+        <button id="resetAllDataBtn" class="admin-btn admin-btn-danger">⚠️ 重置所有玩家</button>
+        <div style="overflow-x: auto; margin-top: 12px;"><table id="playersTable"><thead><tr><th>LINE ID</th><th>水滴</th><th>開花</th><th>領獎次數</th><th>最後領取</th><th>操作</th></tr></thead><tbody id="playersTbody"></tbody></table></div>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">⚙️ 遊戲數值</div>
+        <div class="flex-row">
+            <div><label>🌸 開花門檻</label><input type="number" id="targetWaterSetting" value="660"></div>
+            <div><label>💧 日常澆水</label><input type="number" id="dailyWaterAmount" value="20"></div>
+            <div><label>📖 答題給水</label><input type="number" id="quizRewardAmount" value="50"></div>
+        </div>
+        <button id="saveGameSettingsBtn" class="admin-btn">儲存設定</button>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">🎁 贈品兌換連結</div>
+        <input type="url" id="giftCouponUrl" style="width: 70%;" placeholder="https://lin.ee/xxx" value="https://lin.ee/example">
+        <button id="saveGiftLinkBtn" class="admin-btn">儲存連結</button>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">📚 護膚題庫</div>
+        <textarea id="questionsEditor" rows="6"></textarea>
+        <button id="updateQuestionsBtn" class="admin-btn">更新題庫</button>
+        <button id="resetDefaultQuestions" class="admin-btn">重置預設</button>
+    </div>
+    <div class="admin-section">
+        <div class="admin-title">🛠️ 手動調整玩家</div>
+        <select id="selectPlayerForEdit"></select>
+        <input type="number" id="editWaterAmount" placeholder="增加水滴">
+        <button id="addWaterToPlayerBtn" class="admin-btn">增加水滴</button>
+    </div>
+    <div id="adminMsg" style="background:#e6ddb3; border-radius:30px; padding:8px; margin-top:10px;"></div>
+</div>
+<script>
+    // 儲存KEY (與玩家頁面共用)
+    const STORAGE_PLAYERS = "flower_advanced_players";
+    const STORAGE_SETTINGS = "flower_advanced_settings";
+    const STORAGE_PLANT_APPEARANCE = "flower_advanced_appearance";
+
+    const DEFAULT_QUESTION_BANK = [
+        { text: "旅行時肌膚容易乾燥，哪種保養品最適合隨身攜帶？", options: ["保濕噴霧", "卸妝油", "磨砂膏", "A醇精華"], correct: 0 },
+        { text: "搭飛機時，機艙乾燥，護膚重點是什麼？", options: ["加強保濕鎖水", "去角質", "使用高濃度酸類", "完全不保養"], correct: 0 },
+        { text: "吃太多甜食可能導致肌膚哪種問題？", options: ["糖化反應膠原蛋白流失", "變白", "減少出油", "毛孔縮小"], correct: 0 },
+        { text: "日常防曬最主要的目的？", options: ["防止光老化與皮膚癌", "防止出油", "防止痘痘", "保濕"], correct: 0 },
+        { text: "換季時肌膚不穩，應該避免哪種成分？", options: ["高濃度酒精", "神經醯胺", "玻尿酸", "角鯊烷"], correct: 0 }
+    ];
+
+    let gameSettings = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example", questionBank: JSON.parse(JSON.stringify(DEFAULT_QUESTION_BANK)) };
+    let plantAppearance = { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose" };
+    let playersMap = new Map();
+
+    function persistAll() {
+        const obj = {}; for (let [id, data] of playersMap.entries()) obj[id] = data;
+        localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(obj));
+        localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(gameSettings));
+        localStorage.setItem(STORAGE_PLANT_APPEARANCE, JSON.stringify(plantAppearance));
+    }
+    function loadAll() {
+        const rawPlayers = localStorage.getItem(STORAGE_PLAYERS); if (rawPlayers) { try { const obj = JSON.parse(rawPlayers); playersMap.clear(); for (let [id, val] of Object.entries(obj)) playersMap.set(id, val); } catch(e) {} }
+        const rawSettings = localStorage.getItem(STORAGE_SETTINGS); if (rawSettings) { try { const saved = JSON.parse(rawSettings); gameSettings = { ...gameSettings, ...saved }; if (!gameSettings.questionBank?.length) gameSettings.questionBank = [...DEFAULT_QUESTION_BANK]; } catch(e) {} }
+        const rawAppearance = localStorage.getItem(STORAGE_PLANT_APPEARANCE); if (rawAppearance) { try { const saved = JSON.parse(rawAppearance); plantAppearance = { ...plantAppearance, ...saved }; } catch(e) {} }
+        document.getElementById('stemColor').value = plantAppearance.stemColor;
+        document.getElementById('leafColor').value = plantAppearance.leafColor;
+        document.getElementById('flowerColor').value = plantAppearance.flowerColor;
+        document.getElementById('stamenColor').value = plantAppearance.stamenColor;
+        document.getElementById('flowerTypeSelect').value = plantAppearance.flowerType;
+        document.getElementById('targetWaterSetting').value = gameSettings.targetWater;
+        document.getElementById('dailyWaterAmount').value = gameSettings.dailyWaterAmount;
+        document.getElementById('quizRewardAmount').value = gameSettings.quizRewardAmount;
+        document.getElementById('giftCouponUrl').value = gameSettings.giftCouponLink || "";
+        document.getElementById('questionsEditor').value = JSON.stringify(gameSettings.questionBank, null, 2);
+        renderAdminTable(); updatePlayerSelect();
+    }
+    function renderAdminTable() { let html = ''; for (let [id, data] of playersMap.entries()) { html += `<tr><td>${escapeHtml(id)}</td><td>${data.water || 0}</td><td>${data.hasBloomed ? '🌸開花' : '🌱未開花'}</td><td>${data.totalClaims || 0}</td><td>${data.claimHistory?.length ? data.claimHistory[data.claimHistory.length - 1].date : '無'}</td><td><button class="admin-btn" onclick="resetPlayer('${escapeHtml(id)}')">重置</button></td></tr>`; } document.getElementById('playersTbody').innerHTML = html || '<tr><td colspan="6">尚無玩家</td></tr>'; }
+    window.resetPlayer = (lineId) => { if (playersMap.has(lineId)) { playersMap.delete(lineId); persistAll(); renderAdminTable(); updatePlayerSelect(); adminMsg(`已重置玩家`); } };
+    function updatePlayerSelect() { const sel = document.getElementById('selectPlayerForEdit'); sel.innerHTML = '<option value="">-- 選擇玩家 --</option>'; for (let [id, data] of playersMap.entries()) { const opt = document.createElement('option'); opt.value = id; opt.textContent = `${id.substring(0, 18)} (水:${data.water || 0})`; sel.appendChild(opt); } }
+    function adminMsg(msg) { const div = document.getElementById('adminMsg'); div.innerHTML = msg; setTimeout(() => { if (div.innerHTML === msg) div.innerHTML = ""; }, 2000); }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function (m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+    function savePlantAppearance() { plantAppearance.stemColor = document.getElementById('stemColor').value; plantAppearance.leafColor = document.getElementById('leafColor').value; plantAppearance.flowerColor = document.getElementById('flowerColor').value; plantAppearance.stamenColor = document.getElementById('stamenColor').value; plantAppearance.flowerType = document.getElementById('flowerTypeSelect').value; persistAll(); adminMsg("外觀已儲存"); }
+    function saveSettings() { gameSettings.targetWater = parseInt(document.getElementById('targetWaterSetting').value) || 660; gameSettings.dailyWaterAmount = parseInt(document.getElementById('dailyWaterAmount').value) || 20; gameSettings.quizRewardAmount = parseInt(document.getElementById('quizRewardAmount').value) || 50; persistAll(); adminMsg("設定已儲存"); }
+    function saveGiftLink() { gameSettings.giftCouponLink = document.getElementById('giftCouponUrl').value.trim() || "https://lin.ee/example"; persistAll(); adminMsg("連結已儲存"); }
+    function updateQuestions() { try { const newBank = JSON.parse(document.getElementById('questionsEditor').value); if (Array.isArray(newBank) && newBank.length) { gameSettings.questionBank = newBank; persistAll(); adminMsg("題庫更新成功"); } else throw new Error(); } catch (e) { adminMsg("題庫格式錯誤"); } }
+    function resetDefaultQ() { gameSettings.questionBank = JSON.parse(JSON.stringify(DEFAULT_QUESTION_BANK)); persistAll(); document.getElementById('questionsEditor').value = JSON.stringify(gameSettings.questionBank, null, 2); adminMsg("重置預設題庫"); }
+    function exportBackup() { const exportData = { players: Array.from(playersMap.entries()), settings: gameSettings, plantAppearance }; const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `flower_backup_${Date.now()}.json`; a.click(); URL.revokeObjectURL(a.href); }
+    function importBackup(file) { const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.players) { playersMap.clear(); for (let [id, val] of data.players) playersMap.set(id, val); } if (data.settings) gameSettings = { ...gameSettings, ...data.settings }; if (data.plantAppearance) plantAppearance = { ...plantAppearance, ...data.plantAppearance }; persistAll(); loadAll(); adminMsg("還原成功"); } catch (err) { adminMsg("還原失敗"); } }; reader.readAsText(file); }
+    function resetAllPlayers() { if (confirm("清除所有玩家？")) { playersMap.clear(); persistAll(); renderAdminTable(); updatePlayerSelect(); adminMsg("所有玩家已重置"); } }
+    function addWaterToPlayer() { const selectedId = document.getElementById('selectPlayerForEdit').value; if (!selectedId || !playersMap.has(selectedId)) { adminMsg("請選擇玩家"); return; } const addVal = parseInt(document.getElementById('editWaterAmount').value); if (isNaN(addVal)) return; const player = playersMap.get(selectedId); if (player.hasBloomed) { adminMsg("玩家已開花"); return; } player.water = (player.water || 0) + addVal; if (player.water >= gameSettings.targetWater) { player.water = gameSettings.targetWater; player.hasBloomed = true; } persistAll(); renderAdminTable(); updatePlayerSelect(); adminMsg(`已增加 ${addVal} 滴`); }
+    document.getElementById('savePlantAppearanceBtn').addEventListener('click', savePlantAppearance);
+    document.getElementById('saveGameSettingsBtn').addEventListener('click', saveSettings);
+    document.getElementById('saveGiftLinkBtn').addEventListener('click', saveGiftLink);
+    document.getElementById('updateQuestionsBtn').addEventListener('click', updateQuestions);
+    document.getElementById('resetDefaultQuestions').addEventListener('click', resetDefaultQ);
+    document.getElementById('exportDataBtn').addEventListener('click', exportBackup);
+    document.getElementById('resetAllDataBtn').addEventListener('click', resetAllPlayers);
+    document.getElementById('addWaterToPlayerBtn').addEventListener('click', addWaterToPlayer);
+    document.getElementById('importDataBtn').addEventListener('click', () => { let inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json'; inp.onchange = e => importBackup(e.target.files[0]); inp.click(); });
+    const linkEl = document.getElementById('fixedGameLink'); linkEl.href = "https://berji2025.github.io/berjizh/"; linkEl.innerText = "https://berji2025.github.io/berjizh/";
+    document.getElementById('copyLinkBtn').onclick = () => { navigator.clipboard.writeText("https://berji2025.github.io/berjizh/"); adminMsg("連結已複製！"); };
+    loadAll();
+</script>
+</body>
+</html>
