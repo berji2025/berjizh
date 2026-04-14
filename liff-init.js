@@ -1,4 +1,4 @@
-window.LIFF_ID = "2009794956-AN7ubbFe";
+window.LIFF_ID = "2009794956-63RNhOU2";
 
 liff.init({ liffId: window.LIFF_ID })
   .then(() => {
