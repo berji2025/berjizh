@@ -5,8 +5,6 @@ liff.init({ liffId: window.LIFF_ID })
     console.log("LIFF 初始化成功");
     if (!liff.isLoggedIn()) {
       liff.login();
-    } else {
-      window.dispatchEvent(new CustomEvent('liff-ready'));
     }
   })
   .catch(err => {
