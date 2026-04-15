@@ -29,51 +29,68 @@
         .small-note { font-size: 0.7rem; margin-top: 6px; color: #a5713a; }
         .claim-history { background: #e8dcc8; border-radius: 28px; padding: 8px 12px; margin-top: 10px; font-size: 0.7rem; text-align: left; max-height: 100px; overflow-y: auto; }
     </style>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="liff-init.js"></script>
-</head>
-<body>
-<div class="game-container">
-    <div class="pot-area">
-        <div class="plant-canvas-container">
-            <canvas id="gameCanvas" width="340" height="230" style="width:100%;height:auto;max-width:340px;"></canvas>
-        </div>
-        <div class="stage-text" id="stageLabel">萌芽期</div>
-    </div>
-    <div class="water-progress"><div class="water-fill" id="waterFill">0滴</div></div>
-    <div class="water-stats"><span>💧 水滴: <span id="waterAmount">0</span> / <span id="targetWater">660</span></span><span>🌸 開花門檻</span></div>
-    <div class="button-group">
-        <button class="btn" id="dailyBtn">💧 日常澆水 (+20)</button>
-        <button class="btn btn-primary" id="quizBtn">🌿 答題澆水 (+50)</button>
-    </div>
-    <div class="quiz-panel" id="quizPanel">
-        <div id="questionText"></div>
-        <div id="optionsContainer" class="quiz-options"></div>
-        <div id="quizFeedback" style="margin:8px 0;"></div>
-        <button class="btn" id="submitBtn" style="background:#5fa04f;">提交答案</button>
-    </div>
-    <div class="line-section">
-        <div>🔗 需登入LINE才能遊玩</div>
-        <button class="btn btn-line" id="lineBindBtn">✅ 登入 LINE 綁定</button>
-        <div id="lineMsg" style="font-size:0.7rem;"></div>
-        <div id="giftArea" style="display:none;">
-            <div class="gift-box">
-                <button class="btn" id="claimGiftBtn">🎁 領取兌換券</button>
-                <button class="btn reset-btn-small" id="resetPlantBtn">🌱 重新栽種</button>
-                <div id="giftResult"></div>
-                <div id="claimHistory" class="claim-history"></div>
-            </div>
-        </div>
-        <div class="small-note">※ 每日日常澆水限1次・答題無限制・領取兌換券後可重新栽種</div>
-    </div>
-</div>
-
-<script>
     <script>
     // 1. 定義您的雲端網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
 
-@@ -133,6 +94,46 @@
+    // 2. 修正澆水邏輯 (保留您原有的動畫 addWaterAndSplash)
+    async function dailyWaterPreview() {
+        if (!previewLineId) { showPreviewMsg("請登入 LINE 綁定玩家身分"); return; }
+
+        const now = new Date();
+        const today = now.toLocaleDateString('zh-TW');
+
+        // 跨日檢查：重置每日次數
+        if (previewPlayerData.lastResetDate !== today) {
+            previewPlayerData.dailyCount = 0;
+            previewPlayerData.lastResetDate = today;
+        }
+
+        // 檢查次數限制
+        if (previewPlayerData.dailyCount >= 3) {
+            showPreviewMsg("今日 3 次澆水已達上限 (3/3)！");
+            return;
+        }
+
+        // 檢查冷卻時間 (8 小時)
+        if (previewPlayerData.lastWaterTime) {
+            const lastTime = new Date(previewPlayerData.lastWaterTime);
+            const hoursPassed = (now - lastTime) / (1000 * 60 * 60);
+            if (hoursPassed < 8) {
+                const remain = (8 - hoursPassed).toFixed(1);
+                showPreviewMsg(`花朵還不渴，請等待 ${remain} 小時再澆水`);
+                return;
+            }
+        }
+
+        // 執行加水與您的動畫模組
+        previewPlayerData.dailyCount++;
+        previewPlayerData.lastWaterTime = now.toISOString();
+        
+        // 此處呼叫您原本定義好的動畫函式
+        addWaterAndSplash(gameSettings.dailyWaterAmount, 'daily');
+        
+        showPreviewMsg(`💧 澆水成功！(今日第 ${previewPlayerData.dailyCount} 次)`);
+        
+        // 同步到雲端
+        await syncToCloud();
+    }
+
+    // 3. 雲端同步函式
+    async function syncToCloud() {
+        localStorage.setItem('berji_players', JSON.stringify(playersMap));
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    userId: previewLineId,
+                    water: previewPlayerData.water,
+                    dailyCount: previewPlayerData.dailyCount,
+                    lastWaterTime: previewPlayerData.lastWaterTime,
+                    lastResetDate: previewPlayerData.lastResetDate
+                })
+            });
         } catch(e) { console.error("雲端同步異常"); }
     }
 </script>
@@ -120,11 +137,93 @@
     // ========== 儲存KEY ==========
     const STORAGE_PLAYERS = "flower_advanced_players";
     const STORAGE_SETTINGS = "flower_advanced_settings";
-@@ -223,7 +224,13 @@
+    const STORAGE_PLANT_APPEARANCE = "flower_advanced_appearance";
+
+    // 預設題庫
+    const DEFAULT_QUESTION_BANK = [
+        { text: "旅行時肌膚容易乾燥，哪種保養品最適合隨身攜帶？", options: ["保濕噴霧", "卸妝油", "磨砂膏", "A醇精華"], correct: 0 },
+        { text: "搭飛機時，機艙乾燥，護膚重點是什麼？", options: ["加強保濕鎖水", "去角質", "使用高濃度酸類", "完全不保養"], correct: 0 },
+        { text: "吃太多甜食可能導致肌膚哪種問題？", options: ["糖化反應膠原蛋白流失", "變白", "減少出油", "毛孔縮小"], correct: 0 },
+        { text: "日常防曬最主要的目的？", options: ["防止光老化與皮膚癌", "防止出油", "防止痘痘", "保濕"], correct: 0 },
+        { text: "換季時肌膚不穩，應該避免哪種成分？", options: ["高濃度酒精", "神經醯胺", "玻尿酸", "角鯊烷"], correct: 0 },
+        { text: "冬天乾冷，保養最後一步建議使用？", options: ["乳霜/凡士林鎖水", "化妝水", "防曬", "洗面乳"], correct: 0 },
+        { text: "夏天容易出油，適合的保養質地是？", options: ["凝露/凝膠", "油膏", "凡士林", "厚重乳霜"], correct: 0 },
+        { text: "抗老明星成分A醇(Retinol)使用注意事項？", options: ["需建立耐受並夜間使用", "早上使用效果佳", "可與高濃度酸類疊加", "孕婦安心用"], correct: 0 }
+    ];
+
+    let gameSettings = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example", questionBank: JSON.parse(JSON.stringify(DEFAULT_QUESTION_BANK)) };
+    let plantAppearance = { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose" };
+    let playersMap = new Map();
+    let currentLineId = null, currentPlayerData = null;
+    let currentQuestionObj = null, selectedOptionIdx = null;
+    let canvas = null, ctx = null, animationId = null;
+    let fallingParticles = [], waterSplashEffects = [];
+
+    // 繪製植物
+    function drawFlower(ctx, cx, cy, size, type, mainColor, stamenColor) {
+        ctx.save();
+        if(type === 'rose') {
+            for(let i=0;i<8;i++) { let angle = (i/8)*Math.PI*2; let rad = size * (0.7 + Math.sin(angle*3)*0.2); let x = cx + Math.cos(angle)*rad*0.8; let y = cy + Math.sin(angle)*rad*0.6; ctx.beginPath(); ctx.ellipse(x, y, size*0.5, size*0.7, angle, 0, Math.PI*2); ctx.fillStyle = mainColor; ctx.fill(); }
+            ctx.beginPath(); ctx.arc(cx, cy-2, size*0.4, 0, Math.PI*2); ctx.fillStyle = stamenColor; ctx.fill();
+        } else if(type === 'cherry') {
+            for(let i=0;i<5;i++) { let angle = (i/5)*Math.PI*2; let x = cx + Math.cos(angle)*size*0.9; let y = cy + Math.sin(angle)*size*0.9; ctx.beginPath(); ctx.ellipse(x, y, size*0.5, size*0.55, angle, 0, Math.PI*2); ctx.fillStyle = mainColor; ctx.fill(); }
+            ctx.beginPath(); ctx.arc(cx, cy-1, size*0.25, 0, Math.PI*2); ctx.fillStyle = "#ff6666"; ctx.fill();
+        } else if(type === 'sunflower') {
+            ctx.beginPath(); ctx.arc(cx, cy, size*0.6, 0, Math.PI*2); ctx.fillStyle = "#8B5A2B"; ctx.fill();
+            for(let i=0;i<12;i++) { let angle = (i/12)*Math.PI*2; let x = cx + Math.cos(angle)*size; let y = cy + Math.sin(angle)*size; ctx.beginPath(); ctx.ellipse(x, y, size*0.3, size*0.45, angle, 0, Math.PI*2); ctx.fillStyle = mainColor; ctx.fill(); }
+            ctx.beginPath(); ctx.arc(cx, cy, size*0.35, 0, Math.PI*2); ctx.fillStyle = stamenColor; ctx.fill();
+        } else {
+            for(let i=0;i<6;i++) { let angle = (i/6)*Math.PI*2; let x = cx + Math.cos(angle)*size*0.9; let y = cy + Math.sin(angle)*size*0.5; ctx.beginPath(); ctx.ellipse(x, y, size*0.5, size*0.3, angle, 0, Math.PI*2); ctx.fillStyle = mainColor; ctx.fill(); }
+            ctx.beginPath(); ctx.arc(cx, cy, size*0.25, 0, Math.PI*2); ctx.fillStyle = "#ffcc77"; ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawPlant(waterRatio, hasBloomed) {
+        if(!ctx) return;
+        const w=canvas.width, h=canvas.height;
+        ctx.clearRect(0,0,w,h);
+        const ratio=Math.min(1,Math.max(0,waterRatio));
+        const stemHeightBase=30+ratio*115;
+        const stemBottomY=h-35, stemTopY=stemBottomY-stemHeightBase, stemX=w/2;
+        ctx.beginPath(); ctx.moveTo(stemX,stemBottomY); ctx.lineTo(stemX,stemTopY);
+        ctx.lineWidth=13; ctx.strokeStyle=plantAppearance.stemColor; ctx.stroke();
+        if(ratio>0.15) {
+            const leafCount=Math.floor(ratio*4)+1;
+            for(let i=0;i<leafCount;i++) {
+                const leafY=stemTopY+stemHeightBase*(0.3+i*0.15);
+                if(leafY>stemBottomY-12) continue;
+                const angle=i%2===0?-0.8:0.8;
+                const leafX=stemX+(angle*(12+ratio*22));
+                ctx.beginPath(); ctx.ellipse(leafX,leafY,14+ratio*10,9+ratio*6,angle,0,Math.PI*2);
+                ctx.fillStyle=plantAppearance.leafColor; ctx.fill();
+            }
+        }
+        if(hasBloomed) {
+            drawFlower(ctx, stemX, stemTopY-8, 17+ratio*3, plantAppearance.flowerType, plantAppearance.flowerColor, plantAppearance.stamenColor);
+            for(let i=0;i<2;i++) drawFlower(ctx, stemX-12+Math.sin(i)*10, stemTopY-4+Math.cos(i*2)*8, 10, plantAppearance.flowerType, plantAppearance.flowerColor, plantAppearance.stamenColor);
+        } else if(ratio>0.55) {
+            ctx.beginPath(); ctx.ellipse(stemX, stemTopY-4, 12, 16, 0, 0, Math.PI*2);
+            ctx.fillStyle="#ffccaa"; ctx.fill();
+            ctx.fillStyle=plantAppearance.stamenColor; ctx.beginPath(); ctx.arc(stemX-2, stemTopY-6, 4, 0, Math.PI*2); ctx.fill();
+        } else if(ratio>0.2) {
+            ctx.beginPath(); ctx.arc(stemX, stemTopY-2, 9, 0, Math.PI*2);
+            ctx.fillStyle="#cceeaa"; ctx.fill();
+        } else {
+            ctx.beginPath(); ctx.moveTo(stemX,stemTopY); ctx.lineTo(stemX-8,stemTopY-12); ctx.lineTo(stemX+8,stemTopY-12); ctx.fillStyle="#a3d06a"; ctx.fill();
+        }
+        ctx.fillStyle="#b97f48"; ctx.fillRect(stemX-30,stemBottomY-8,60,14);
+        ctx.fillStyle="#e2b87a"; ctx.fillRect(stemX-24,stemBottomY-14,48,10);
+        for(let p of fallingParticles) { ctx.save(); ctx.fillStyle=p.type==='petal'?plantAppearance.flowerColor:plantAppearance.leafColor; ctx.beginPath(); ctx.ellipse(p.x,p.y,p.size*0.6,p.size*0.8,Math.random()*Math.PI,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+        for(let s of waterSplashEffects) { ctx.beginPath(); ctx.arc(s.x,s.y,5*(1-s.life),0,Math.PI*2); ctx.fillStyle=`rgba(80,200,255,${0.7*s.life})`; ctx.fill(); }
+    }
+
+    function initFallingParticles() { const count=10; fallingParticles=[]; for(let i=0;i<count;i++) fallingParticles.push({ x:Math.random()*300, y:Math.random()*200, size:3+Math.random()*8, speedX:(Math.random()-0.5)*0.7, speedY:0.7+Math.random()*1.6, type:Math.random()>0.6?'petal':'leaf' }); }
+    function updateParticles() { for(let p of fallingParticles) { p.x+=p.speedX; p.y+=p.speedY; if(p.y>230||p.x<-30||p.x>330) { p.x=Math.random()*300; p.y=-10; p.speedX=(Math.random()-0.5)*0.7; p.speedY=0.7+Math.random()*1.6; } } for(let i=waterSplashEffects.length-1;i>=0;i--) { waterSplashEffects[i].life-=0.05; if(waterSplashEffects[i].life<=0) waterSplashEffects.splice(i,1); } }
+    function animateCanvas() { if(!canvas||!ctx) return; if(currentPlayerData) { const water=currentPlayerData.water||0; let ratio=Math.min(1,water/gameSettings.targetWater); drawPlant(ratio,currentPlayerData.hasBloomed); } else drawPlant(0,false); updateParticles(); animationId=requestAnimationFrame(animateCanvas); }
     function triggerWaterSplash(x,y) { for(let i=0;i<14;i++) waterSplashEffects.push({ x:x+(Math.random()-0.5)*35, y:y+(Math.random()-0.5)*25, life:1.0 }); }
 
     function updateUI() {
-        if(!currentPlayerData) { document.getElementById('stageLabel').innerText="未登入"; return; }
         if(!currentPlayerData) { 
             document.getElementById('stageLabel').innerText="未登入";
             document.getElementById('waterFill').style.width='0%';
@@ -135,12 +234,18 @@
         const water=currentPlayerData.water||0, target=gameSettings.targetWater, percent=Math.min(100,(water/target)*100);
         document.getElementById('waterFill').style.width=`${percent}%`;
         document.getElementById('waterFill').innerText=`${Math.floor(water)}/${target}`;
-@@ -239,8 +246,14 @@
+        document.getElementById('waterAmount').innerText=water;
+        let stageName="萌芽期";
+        if(currentPlayerData.hasBloomed) stageName="✨ 盛開 ✨";
+        else if(water>=target*0.8) stageName="🌼 含苞待放";
+        else if(water>=target*0.5) stageName="🌿 成長期";
+        else if(water>=target*0.2) stageName="🌱 幼苗";
+        document.getElementById('stageLabel').innerText=stageName;
+        const ratio=Math.min(1,water/target); drawPlant(ratio,currentPlayerData.hasBloomed);
+        const giftDiv=document.getElementById('giftArea');
         if(currentPlayerData.hasBloomed){
             giftDiv.style.display="block";
             const historyDiv=document.getElementById('claimHistory');
-            if(historyDiv && currentPlayerData.claimHistory) historyDiv.innerHTML=`📜 領取紀錄: ${currentPlayerData.claimHistory.map(h=>h.date).join('<br>')}`;
-        } else giftDiv.style.display="none";
             if(historyDiv && currentPlayerData.claimHistory && currentPlayerData.claimHistory.length>0){
                 historyDiv.innerHTML = `📜 領取紀錄: ${currentPlayerData.claimHistory.map(h => h.date).join('<br>')}`;
             } else if(historyDiv){
@@ -152,12 +257,37 @@
     }
 
     function addWater(delta, source) {
-@@ -275,12 +288,84 @@
+        if(!currentPlayerData){ alert("請先登入LINE"); return false; }
+        if(currentPlayerData.hasBloomed){ document.getElementById('quizFeedback').innerHTML="已開花，領取後可重新栽種"; return false; }
+        let newWater=(currentPlayerData.water||0)+delta;
+        let bloom=false;
+        if(newWater>=gameSettings.targetWater){ newWater=gameSettings.targetWater; bloom=true; currentPlayerData.hasBloomed=true; }
+        currentPlayerData.water=newWater;
+        if(bloom) currentPlayerData.hasBloomed=true;
+        persistPlayerData();
+        updateUI();
+        if(canvas) triggerWaterSplash(canvas.width/2,canvas.height-50);
+        document.getElementById('quizFeedback').innerHTML=`${source==='daily'?'💧 日常澆水':'🌿 答對澆水'} +${delta}滴！`;
+        if(bloom) document.getElementById('quizFeedback').innerHTML+=` 🎉 花朵盛開！可領取兌換券🎉`;
+        return true;
+    }
+
+    function dailyWater() {
+        if(!currentPlayerData){ alert("請先登入LINE"); return; }
+        const today=new Date().toLocaleDateString('zh-TW');
+        if(currentPlayerData.lastDailyDate===today){ document.getElementById('quizFeedback').innerHTML="今日日常澆水已用過"; return; }
+        if(currentPlayerData.hasBloomed){ document.getElementById('quizFeedback').innerHTML="已開花"; return; }
+        currentPlayerData.lastDailyDate=today;
+        addWater(gameSettings.dailyWaterAmount, 'daily');
+    }
+
+    function getRandomQuestion() { const bank=gameSettings.questionBank; if(!bank.length) return { text:"護膚知識", options:["選項A","B","C"], correct:0 }; return {...bank[Math.floor(Math.random()*bank.length)]}; }
+    function renderQuestion() { if(!currentQuestionObj) currentQuestionObj=getRandomQuestion(); document.getElementById('questionText').innerText=currentQuestionObj.text; const container=document.getElementById('optionsContainer'); container.innerHTML=""; currentQuestionObj.options.forEach((opt,idx)=>{ const div=document.createElement('div'); div.className='quiz-opt'; div.innerText=`${String.fromCharCode(65+idx)}. ${opt}`; div.onclick=()=>{ document.querySelectorAll('#optionsContainer .quiz-opt').forEach(el=>el.classList.remove('selected')); div.classList.add('selected'); selectedOptionIdx=idx; document.getElementById('quizFeedback').innerHTML="已選取答案"; }; container.appendChild(div); }); document.getElementById('quizFeedback').innerHTML=`答對可得 ${gameSettings.quizRewardAmount} 滴水！`; }
+    function submitQuiz() { if(!currentPlayerData){ alert("請先登入LINE"); return; } if(currentPlayerData.hasBloomed){ document.getElementById('quizFeedback').innerHTML="已開花，領取後可重新栽種"; return; } if(selectedOptionIdx===null){ document.getElementById('quizFeedback').innerHTML="請選擇答案"; return; } const isCorrect=(selectedOptionIdx===currentQuestionObj.correct); if(isCorrect){ addWater(gameSettings.quizRewardAmount, 'quiz'); } else { document.getElementById('quizFeedback').innerHTML=`❌ 答錯！ 正確：${currentQuestionObj.options[currentQuestionObj.correct]}`; } currentQuestionObj=getRandomQuestion(); selectedOptionIdx=null; renderQuestion(); }
+    function showQuizPanel() { if(!currentPlayerData){ alert("請先登入LINE"); return; } document.getElementById('quizPanel').style.display="block"; if(!currentQuestionObj) currentQuestionObj=getRandomQuestion(); renderQuestion(); }
     function resetAndReplant() { if(!currentPlayerData) return; currentPlayerData.water=0; currentPlayerData.hasBloomed=false; currentPlayerData.lastDailyDate=null; persistPlayerData(); updateUI(); document.getElementById('quizFeedback').innerHTML="🌱 已重新栽種，花朵重生！繼續澆水吧～"; }
     function claimGift() { if(!currentPlayerData){ alert("請先登入LINE"); return; } if(!currentPlayerData.hasBloomed){ document.getElementById('giftResult').innerHTML="花朵尚未盛開，無法領取"; return; } const link=gameSettings.giftCouponLink; const today=new Date().toLocaleString('zh-TW'); if(!currentPlayerData.claimHistory) currentPlayerData.claimHistory=[]; currentPlayerData.claimHistory.push({ date:today, giftLink:link }); currentPlayerData.totalClaims=(currentPlayerData.totalClaims||0)+1; persistPlayerData(); updateUI(); window.open(link,"_blank"); document.getElementById('giftResult').innerHTML=`✅ 第${currentPlayerData.totalClaims}次領取成功！`; }
 
-    function persistPlayerData() { const obj={}; for(let [id,data] of playersMap.entries()) obj[id]=data; localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(obj)); }
-    function loadGameSettings() { const raw=localStorage.getItem(STORAGE_SETTINGS); if(raw){ try{ const saved=JSON.parse(raw); gameSettings={...gameSettings,...saved}; if(!gameSettings.questionBank?.length) gameSettings.questionBank=[...DEFAULT_QUESTION_BANK]; } catch(e){} } document.getElementById('targetWater').innerText=gameSettings.targetWater; }
     function persistPlayerData() { 
         const obj={}; 
         for(let [id,data] of playersMap.entries()) obj[id]=data; 
@@ -176,7 +306,6 @@
         document.getElementById('targetWater').innerText=gameSettings.targetWater; 
     }
 
-    function oneKeyBind() { if(!window.liff){ alert("LINE套件載入中"); return; } if(!liff.isLoggedIn()){ liff.login(); return; } liff.getProfile().then(profile=>{ const realLineId=profile.userId; if(playersMap.has(realLineId)) currentPlayerData=playersMap.get(realLineId); else { const newPlayer={ water:0, hasBloomed:false, lastDailyDate:null, claimHistory:[], totalClaims:0 }; playersMap.set(realLineId,newPlayer); currentPlayerData=newPlayer; persistPlayerData(); } currentLineId=realLineId; document.getElementById('lineMsg').innerHTML=`✅ 綁定成功！`; document.getElementById('lineBindBtn').disabled=true; document.getElementById('lineBindBtn').innerText="🔗 已登入"; updateUI(); }).catch(err=>{ alert("取得LINE資料失敗，請重新登入"); liff.logout(); liff.login(); }); }
     // 修正後的綁定邏輯
     function oneKeyBind() {
         if(!window.liff){ alert("LINE套件載入中，請稍後"); return; }
@@ -207,7 +336,35 @@
         });
     }
 
-    function initGame() { loadGameSettings(); const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); if(rawPlayers){ try{ const obj=JSON.parse(rawPlayers); playersMap.clear(); for(let [id,val] of Object.entries(obj)) playersMap.set(id,val); } catch(e){} } canvas=document.getElementById('gameCanvas'); if(canvas){ canvas.width=340; canvas.height=230; ctx=canvas.getContext('2d'); initFallingParticles(); animateCanvas(); } document.getElementById('dailyBtn').addEventListener('click', dailyWater); document.getElementById('quizBtn').addEventListener('click', showQuizPanel); document.getElementById('submitBtn').addEventListener('click', submitQuiz); document.getElementById('lineBindBtn').addEventListener('click', oneKeyBind); document.getElementById('claimGiftBtn').addEventListener('click', claimGift); document.getElementById('resetPlantBtn').addEventListener('click', resetAndReplant); }
+    async function initGame() { 
+    // --- 1. 關鍵：強迫從雲端抓取管理員設定 ---
+    try {
+        const response = await fetch(GAS_URL); // 去 GAS 抓你在後台存進試算表的資料
+        const cloudData = await response.json();
+        
+        if (cloudData.config) {
+            // 同步外觀 (顏色、種類)
+            if (cloudData.config.appearance) {
+                plantAppearance = { ...plantAppearance, ...cloudData.config.appearance };
+            }
+            // 同步規則 (目標水量、每日水量)
+            if (cloudData.config.settings) {
+                gameSettings = { ...gameSettings, ...cloudData.config.settings };
+                // 同步更新 UI 上的數字
+                document.getElementById('targetWater').innerText = gameSettings.targetWater;
+            }
+            // 同步題庫
+            if (cloudData.config.questions) {
+                gameSettings.questionBank = cloudData.config.questions;
+            }
+        }
+    } catch (e) {
+        console.warn("無法取得雲端配置，改讀取本地備份");
+        // 如果雲端抓不到，才讀取原本的 LocalStorage
+        loadGameSettings(); 
+    }
+
+    // --- 2. 接著才進行原有的 Canvas 與 LINE 初始化 ---
     function initGame() { 
         loadGameSettings(); 
         const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); 
@@ -241,3 +398,4 @@
     initGame();
 </script>
 </body>
+</html>
