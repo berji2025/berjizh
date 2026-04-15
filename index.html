@@ -21,7 +21,6 @@
             padding: 20px;
         }
 
-        /* 遊戲主卡片 */
         .game-card {
             max-width: 550px;
             width: 100%;
@@ -29,13 +28,10 @@
             border-radius: 72px 72px 60px 60px;
             box-shadow: 0 25px 40px rgba(0, 0, 0, 0.2);
             overflow: hidden;
-            backdrop-filter: blur(2px);
-            transition: all 0.2s;
         }
 
-        /* 可變遊戲標題區 */
         .game-header {
-            background: #6fbf4c;
+            background: linear-gradient(135deg, #6fbf4c, #4a8e2c);
             padding: 16px 20px;
             text-align: center;
         }
@@ -45,7 +41,6 @@
             color: white;
             text-shadow: 2px 2px 0 #3f7e2a;
             letter-spacing: 2px;
-            word-break: keep-all;
         }
         .game-sub {
             font-size: 0.7rem;
@@ -53,14 +48,11 @@
             margin-top: 4px;
         }
 
-        /* 花盆區 - 仿蝦皮風格玻璃質感 */
         .pot-area {
             background: #e8d5b5;
             padding: 20px 15px 15px;
             text-align: center;
             border-bottom: 6px solid #c49a6c;
-            position: relative;
-            overflow: hidden;
         }
         .plant-stage {
             background: #fef7e8;
@@ -68,8 +60,7 @@
             margin: 5px 10px 0 10px;
             padding: 25px 15px 20px;
             box-shadow: inset 0 2px 8px rgba(98, 58, 28, 0.05), 0 10px 20px rgba(0,0,0,0.1);
-            position: relative;
-            min-height: 260px;
+            min-height: 280px;
         }
         canvas {
             display: block;
@@ -92,13 +83,11 @@
             margin-top: 10px;
         }
 
-        /* 進度條 */
         .water-progress {
             background: #e0d0b0;
             border-radius: 40px;
             margin: 18px 20px 8px 20px;
             height: 30px;
-            position: relative;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
             overflow: hidden;
         }
@@ -126,7 +115,6 @@
             margin-bottom: 10px;
         }
 
-        /* 按鈕群 */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -221,14 +209,14 @@
     <script src="liff-init.js"></script>
 </head>
 <body>
-<div class="game-card" id="gameApp">
+<div class="game-card">
     <div class="game-header">
         <div class="game-name" id="gameTitle">🌸 護膚花園</div>
         <div class="game-sub">知識澆水・動態花靈</div>
     </div>
     <div class="pot-area">
         <div class="plant-stage">
-            <canvas id="flowerCanvas" width="320" height="240" style="width:100%; height:auto; max-width:320px; background:#fef7e8; border-radius:48px;"></canvas>
+            <canvas id="flowerCanvas" width="340" height="260" style="width:100%; height:auto; max-width:340px; background:#fef7e8; border-radius:48px;"></canvas>
             <div class="stage-text" id="stageLabel">萌芽期</div>
         </div>
     </div>
@@ -261,7 +249,7 @@
 </div>
 
 <script>
-    // ========== 雲端同步網址 (請使用您的 Apps Script 網址) ==========
+    // ========== 雲端同步網址 (請替換成您的 Apps Script 網址) ==========
     const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
 
     // ========== 遊戲設定 ==========
@@ -270,36 +258,36 @@
         dailyWaterAmount: 20,
         quizRewardAmount: 50,
         giftCouponLink: "https://liff.line.me/2008098836-9bAORdPj/lottery-game/?gid=69df53857a39fb4dc2fbd1e6&platform=line",
-        gameName: "🌸 護膚花園",
-        questionBank: [
-            { text: "旅行時肌膚乾燥，最適合隨身攜帶？", options: ["保濕噴霧", "卸妝油", "磨砂膏", "A醇"], correct: 0 },
-            { text: "吃太多甜食可能導致肌膚？", options: ["糖化膠原流失", "變白", "減少出油", "緊緻"], correct: 0 },
-            { text: "日常防曬最主要目的？", options: ["防光老化", "保濕", "控油", "美白"], correct: 0 },
-            { text: "換季肌膚不穩，應避免？", options: ["高濃度酒精", "神經醯胺", "玻尿酸", "角鯊烷"], correct: 0 },
-            { text: "夏天適合保養質地？", options: ["凝露", "油膏", "凡士林", "厚重霜"], correct: 0 }
-        ]
+        gameName: "🌸 護膚花園"
     };
     
-    // 植物外觀參數 (3D 立體風格)
     let plantStyle = {
         stemColor: "#5a8f4c",
         leafColor: "#6fbf4c",
         flowerColor: "#ffaa88",
         stamenColor: "#dd8844",
-        flowerType: "rose"  // rose, cherry, sunflower, lotus
+        flowerType: "rose"
     };
+
+    let questionBank = [
+        { text: "旅行時肌膚乾燥，最適合隨身攜帶？", options: ["保濕噴霧", "卸妝油", "磨砂膏", "A醇"], correct: 0 },
+        { text: "吃太多甜食可能導致肌膚？", options: ["糖化膠原流失", "變白", "減少出油", "緊緻"], correct: 0 },
+        { text: "日常防曬最主要目的？", options: ["防光老化", "保濕", "控油", "美白"], correct: 0 },
+        { text: "換季肌膚不穩，應避免？", options: ["高濃度酒精", "神經醯胺", "玻尿酸", "角鯊烷"], correct: 0 },
+        { text: "夏天適合保養質地？", options: ["凝露", "油膏", "凡士林", "厚重霜"], correct: 0 },
+        { text: "哪種成分有助於肌膚修復屏障？", options: ["神經醯胺", "水楊酸", "酒精", "香精"], correct: 0 },
+        { text: "抗老成分A醇建議使用時機？", options: ["夜間", "早上", "隨時", "日曬前"], correct: 0 }
+    ];
 
     let playersMap = new Map();
     let currentLineId = null, currentPlayerData = null;
     let canvas = null, ctx = null;
     let animationId = null;
-    let waterSplashEffects = [];      // 澆水粒子特效
-    let fallingPetals = [];            // 飄落花瓣
-
-    // 問答變數
+    let waterSplashEffects = [];
+    let fallingParticles = [];     // 飄落粒子 (前期樹葉/後期花瓣)
     let currentQuestionObj = null, selectedOptionIdx = null;
 
-    // ---------- 動態植物繪製 (仿蝦皮精緻風格) ----------
+    // ========== 動態植物繪製 (精緻版) ==========
     function drawFlower(ctx, cx, cy, size, type, mainColor, stamenColor) {
         ctx.save();
         ctx.shadowBlur = 0;
@@ -377,12 +365,12 @@
         const w = canvas.width, h = canvas.height;
         ctx.clearRect(0, 0, w, h);
         const ratio = Math.min(1, Math.max(0, waterRatio));
-        const stemHeight = 35 + ratio * 120;
-        const bottomY = h - 40;
+        const stemHeight = 35 + ratio * 130;
+        const bottomY = h - 45;
         const topY = bottomY - stemHeight;
         const centerX = w/2;
 
-        // 莖 (立體漸層)
+        // 立體莖
         const gradient = ctx.createLinearGradient(centerX-6, bottomY, centerX+6, topY);
         gradient.addColorStop(0, plantStyle.stemColor);
         gradient.addColorStop(1, "#3c6e2f");
@@ -393,17 +381,17 @@
         ctx.strokeStyle = gradient;
         ctx.stroke();
 
-        // 葉子 (動態數量)
+        // 葉子動態
         if(ratio > 0.15) {
             let leafCount = Math.floor(ratio * 5) + 1;
             for(let i=0; i<leafCount; i++) {
                 let leafY = topY + stemHeight * (0.25 + i*0.15);
                 if(leafY > bottomY-15) continue;
                 let side = i%2===0 ? -1 : 1;
-                let leafX = centerX + side * (12 + ratio*18);
+                let leafX = centerX + side * (12 + ratio*20);
                 ctx.save();
                 ctx.shadowBlur = 4;
-                ctx.shadowColor = "rgba(0,0,0,0.2)";
+                ctx.shadowColor = "rgba(0,0,0,0.15)";
                 ctx.beginPath();
                 ctx.ellipse(leafX, leafY, 12+ratio*8, 8+ratio*5, side*0.6, 0, Math.PI*2);
                 ctx.fillStyle = plantStyle.leafColor;
@@ -441,20 +429,29 @@
             ctx.fill();
         }
 
-        // 花盆裝飾
+        // 花盆
         ctx.fillStyle = "#b97f48";
         ctx.fillRect(centerX-32, bottomY-10, 64, 16);
         ctx.fillStyle = "#e2b87a";
         ctx.fillRect(centerX-26, bottomY-18, 52, 12);
+        ctx.fillStyle = "#8B5A2B";
+        ctx.fillRect(centerX-28, bottomY-14, 56, 6);
 
-        // 飄落花瓣特效
-        for(let p of fallingPetals) {
+        // 繪製飄落粒子 (前期樹葉/後期花瓣)
+        for(let p of fallingParticles) {
             ctx.save();
             ctx.globalAlpha = 0.7;
-            ctx.fillStyle = plantStyle.flowerColor;
-            ctx.beginPath();
-            ctx.ellipse(p.x, p.y, p.size*0.6, p.size*0.8, p.rot, 0, Math.PI*2);
-            ctx.fill();
+            if(p.type === 'leaf') {
+                ctx.fillStyle = plantStyle.leafColor;
+                ctx.beginPath();
+                ctx.ellipse(p.x, p.y, p.size*0.6, p.size*0.4, p.rot, 0, Math.PI*2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = plantStyle.flowerColor;
+                ctx.beginPath();
+                ctx.ellipse(p.x, p.y, p.size*0.5, p.size*0.7, p.rot, 0, Math.PI*2);
+                ctx.fill();
+            }
             ctx.restore();
         }
         // 水花特效
@@ -466,30 +463,38 @@
         }
     }
 
-    function updateFallingPetals() {
-        for(let i=0; i<fallingPetals.length; i++) {
-            let p = fallingPetals[i];
+    // 根據是否開花決定飄落粒子種類 (前期樹葉，後期花瓣)
+    function updateFallingParticles(hasBloomed) {
+        // 先移動所有現有粒子
+        for(let i=0; i<fallingParticles.length; i++) {
+            let p = fallingParticles[i];
             p.x += p.speedX;
             p.y += p.speedY;
             p.rot += 0.05;
-            if(p.y > 240 || p.x < -20 || p.x > 340) {
-                fallingPetals.splice(i,1);
+            if(p.y > 280 || p.x < -30 || p.x > 370) {
+                fallingParticles.splice(i,1);
                 i--;
             }
         }
-        if(fallingPetals.length < 8 && currentPlayerData && currentPlayerData.hasBloomed) {
-            fallingPetals.push({
-                x: Math.random() * 300 + 20,
-                y: -10,
-                size: 4+Math.random()*6,
-                speedX: (Math.random()-0.5)*0.8,
-                speedY: 1 + Math.random()*1.5,
-                rot: Math.random()*Math.PI*2
-            });
-        }
-        for(let i=waterSplashEffects.length-1;i>=0;i--) {
-            waterSplashEffects[i].life -= 0.05;
-            if(waterSplashEffects[i].life <= 0) waterSplashEffects.splice(i,1);
+
+        // 控制飄落數量 (最多12個)
+        const targetCount = 12;
+        if(fallingParticles.length < targetCount) {
+            let need = targetCount - fallingParticles.length;
+            for(let i=0; i<need; i++) {
+                let isBloomed = (hasBloomed === true);
+                // 開花後飄花瓣，開花前飄樹葉
+                let type = isBloomed ? 'petal' : 'leaf';
+                fallingParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: -5 - Math.random() * 20,
+                    size: 4 + Math.random() * 7,
+                    speedX: (Math.random() - 0.5) * 0.8,
+                    speedY: 0.8 + Math.random() * 1.6,
+                    rot: Math.random() * Math.PI * 2,
+                    type: type
+                });
+            }
         }
     }
 
@@ -499,25 +504,54 @@
             let water = currentPlayerData.water || 0;
             let ratio = Math.min(1, water / gameSettings.targetWater);
             drawPlant(ratio, currentPlayerData.hasBloomed);
+            // 傳入開花狀態，讓飄落粒子根據開花與否切換種類
+            updateFallingParticles(currentPlayerData.hasBloomed);
         } else {
             drawPlant(0, false);
+            updateFallingParticles(false);
         }
-        updateFallingPetals();
+        // 更新水花特效生命週期
+        for(let i=waterSplashEffects.length-1;i>=0;i--) {
+            waterSplashEffects[i].life -= 0.04;
+            if(waterSplashEffects[i].life <= 0) waterSplashEffects.splice(i,1);
+        }
         animationId = requestAnimationFrame(animate);
     }
 
     function triggerWaterSplash() {
         if(!canvas) return;
-        for(let i=0;i<12;i++) {
+        for(let i=0;i<16;i++) {
             waterSplashEffects.push({
-                x: canvas.width/2 + (Math.random()-0.5)*40,
-                y: canvas.height-50 + (Math.random()-0.5)*30,
+                x: canvas.width/2 + (Math.random()-0.5)*45,
+                y: canvas.height-55 + (Math.random()-0.5)*35,
                 life: 1.0
             });
         }
     }
 
-    // 遊戲邏輯: 增加水量、開花判定
+    // ========== 遊戲邏輯 ==========
+    async function loadCloudSettings() {
+        try {
+            let res = await fetch(CLOUD_URL);
+            let data = await res.json();
+            if(data.config) {
+                if(data.config.gameName) gameSettings.gameName = data.config.gameName;
+                if(data.config.targetWater) gameSettings.targetWater = data.config.targetWater;
+                if(data.config.dailyWaterAmount) gameSettings.dailyWaterAmount = data.config.dailyWaterAmount;
+                if(data.config.quizRewardAmount) gameSettings.quizRewardAmount = data.config.quizRewardAmount;
+                if(data.config.giftCouponLink) gameSettings.giftCouponLink = data.config.giftCouponLink;
+                if(data.config.stemColor) plantStyle.stemColor = data.config.stemColor;
+                if(data.config.leafColor) plantStyle.leafColor = data.config.leafColor;
+                if(data.config.flowerColor) plantStyle.flowerColor = data.config.flowerColor;
+                if(data.config.stamenColor) plantStyle.stamenColor = data.config.stamenColor;
+                if(data.config.flowerType) plantStyle.flowerType = data.config.flowerType;
+                if(data.config.questions && data.config.questions.length) questionBank = data.config.questions;
+                document.getElementById('gameTitle').innerText = gameSettings.gameName;
+                document.getElementById('targetWaterSpan').innerText = gameSettings.targetWater;
+            }
+        } catch(e) { console.log("雲端讀取失敗，使用預設"); }
+    }
+
     function addWater(delta, source) {
         if(!currentPlayerData) { alert("請先登入LINE"); return false; }
         if(currentPlayerData.hasBloomed) {
@@ -558,7 +592,7 @@
     }
 
     function getRandomQuestion() {
-        let bank = gameSettings.questionBank;
+        let bank = questionBank;
         if(!bank.length) return { text:"護膚小知識", options:["選項A","選項B","選項C"], correct:0 };
         return {...bank[Math.floor(Math.random()*bank.length)]};
     }
@@ -620,6 +654,8 @@
         updateUI();
         syncPlayerToCloud();
         document.getElementById('quizFeedback').innerHTML = "🌱 已重新栽種，花朵重生！";
+        // 清空飄落粒子，重新產生樹葉
+        fallingParticles = [];
     }
 
     function claimGift() {
@@ -698,24 +734,6 @@
         } catch(e) {}
     }
 
-    async function loadCloudSettings() {
-        try {
-            let res = await fetch(CLOUD_URL);
-            let data = await res.json();
-            if(data.config) {
-                if(data.config.gameName) gameSettings.gameName = data.config.gameName;
-                if(data.config.targetWater) gameSettings.targetWater = data.config.targetWater;
-                if(data.config.dailyWaterAmount) gameSettings.dailyWaterAmount = data.config.dailyWaterAmount;
-                if(data.config.quizRewardAmount) gameSettings.quizRewardAmount = data.config.quizRewardAmount;
-                if(data.config.giftCouponLink) gameSettings.giftCouponLink = data.config.giftCouponLink;
-                if(data.config.questions && data.config.questions.length) gameSettings.questionBank = data.config.questions;
-                if(data.config.plantStyle) plantStyle = {...plantStyle, ...data.config.plantStyle};
-                document.getElementById('gameTitle').innerText = gameSettings.gameName;
-                document.getElementById('targetWaterSpan').innerText = gameSettings.targetWater;
-            }
-        } catch(e) { console.log("雲端讀取失敗，使用預設"); }
-    }
-
     function oneKeyBind() {
         if(!window.liff){ alert("LINE載入中"); return; }
         if(!liff.isLoggedIn()){ liff.login(); return; }
@@ -749,7 +767,7 @@
         }
         canvas = document.getElementById('flowerCanvas');
         if(canvas) {
-            canvas.width = 320; canvas.height = 240;
+            canvas.width = 340; canvas.height = 260;
             ctx = canvas.getContext('2d');
             animate();
         }
