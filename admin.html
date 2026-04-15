@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>護膚花園 - 管理後台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>護膚花園 - 管理後台 (雲端同步版)</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: #d4e8cf; margin: 0; padding: 20px; }
@@ -14,20 +14,30 @@
         .field { flex: 1; min-width: 150px; }
         label { display: block; font-weight: bold; margin-bottom: 6px; color: #5a4a2e; }
         input, select, textarea { width: 100%; padding: 8px 12px; border-radius: 60px; border: 1px solid #c9aa6f; background: white; }
-        button { background: #7ca85a; color: white; border: none; padding: 8px 20px; border-radius: 60px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+        button { background: #7ca85a; color: white; border: none; padding: 8px 20px; border-radius: 60px; cursor: pointer; font-weight: bold; margin-top: 8px; margin-right: 8px; }
         button:hover { background: #6b934d; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; }
+        .btn-cloud { background: #2196f3; }
+        .btn-danger { background: #c73f1e; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 12px; }
         th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background: #e9dbbd; }
         .msg { margin-top: 16px; padding: 10px; border-radius: 30px; text-align: center; background: #e6ddb3; }
         .success { background: #c8e6c9; color: #2e7d32; }
         .error { background: #ffcdd2; color: #c62828; }
+        .loading { background: #fff3e0; color: #e65100; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>🌸 護膚花園・管理後台</h1>
-    <p>所有設定會儲存在此瀏覽器中，<strong>不會影響其他玩家</strong>。若需雲端同步，請匯出設定檔。</p>
+    <h1>🌸 護膚花園・管理後台 <span style="font-size:0.8rem;">(雲端同步版)</span></h1>
+    <p>所有設定會自動同步到雲端，玩家遊戲頁面會自動讀取最新設定。</p>
+
+    <div class="section">
+        <h3>☁️ 雲端同步</h3>
+        <button id="syncToCloudBtn" class="btn-cloud">📤 上傳到雲端 (儲存所有設定)</button>
+        <button id="syncFromCloudBtn" class="btn-cloud">📥 從雲端下載 (讀取最新設定)</button>
+        <span id="cloudStatus" style="margin-left:12px;"></span>
+    </div>
 
     <div class="section">
         <h3>🎨 植物外觀</h3>
@@ -49,7 +59,7 @@
             <div class="field"><label>🍂 飄落數量</label><input type="number" id="petalCount" value="10"></div>
             <div class="field"><label>🌬️ 飄落速度</label><input type="range" id="fallSpeed" min="0.5" max="2.5" step="0.1" value="1.2"></div>
         </div>
-        <button id="saveAppearanceBtn">💾 儲存外觀設定</button>
+        <button id="saveAppearanceBtn">💾 儲存外觀設定 (本地)</button>
     </div>
 
     <div class="section">
@@ -60,19 +70,22 @@
             <div class="field"><label>📖 答題給水</label><input type="number" id="quizReward" value="50"></div>
             <div class="field"><label>🎁 兌換券連結</label><input type="url" id="giftLink" value="https://lin.ee/example"></div>
         </div>
-        <button id="saveRulesBtn">💾 儲存遊戲規則</button>
+        <div class="flex">
+            <div class="field"><label>🏷️ 遊戲名稱</label><input type="text" id="gameName" value="🌸 護膚花園" placeholder="遊戲標題"></div>
+        </div>
+        <button id="saveRulesBtn">💾 儲存遊戲規則 (本地)</button>
     </div>
 
     <div class="section">
         <h3>📚 題庫管理 (JSON格式)</h3>
         <textarea id="questionsEditor" rows="8" style="width:100%; border-radius:20px; font-family:monospace;"></textarea>
-        <button id="saveQuestionsBtn">📖 儲存題庫</button>
+        <button id="saveQuestionsBtn">📖 儲存題庫 (本地)</button>
         <button id="resetDefaultBtn">↺ 重置預設題庫</button>
     </div>
 
     <div class="section">
         <h3>📋 玩家進度 (此瀏覽器)</h3>
-        <div style="overflow-x:auto;"><table id="playerTable"><thead><tr><th>LINE ID</th><th>水滴量</th><th>開花狀態</th><th>領取次數</th></tr></thead><tbody id="playerTbody"></tbody></table></div>
+        <div style="overflow-x:auto;"><table id="playerTable"><thead><tr><th>LINE ID</th><th>水滴量</th><th>開花狀態</th><th>領取次數</th><th>最後領取</th></thead><tbody id="playerTbody"></tbody>}</div>
         <div class="flex" style="margin-top:12px;">
             <select id="playerSelect" style="flex:2;"></select>
             <input type="number" id="addWaterAmount" placeholder="增加水滴" style="flex:1;">
@@ -86,13 +99,16 @@
         <button id="exportBtn">📥 匯出所有設定與玩家資料</button>
         <input type="file" id="importFile" accept=".json" style="display:none;">
         <button id="importBtn">📤 匯入備份還原</button>
-        <button id="clearAllBtn" style="background:#c73f1e;">⚠️ 清除所有資料 (重置)</button>
+        <button id="clearAllBtn" class="btn-danger">⚠️ 清除所有資料 (重置)</button>
     </div>
 
     <div id="msgBox" class="msg">就緒</div>
 </div>
 
 <script>
+    // ========== 雲端同步網址 (請使用您的 Apps Script 網址) ==========
+    const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+
     // 儲存用的 key
     const CONFIG_KEY = "flower_admin_config";
     const PLAYERS_KEY = "flower_advanced_players";
@@ -109,24 +125,23 @@
     // 初始化設定
     let adminConfig = {
         appearance: { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 },
-        rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" },
+        rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example", gameName: "🌸 護膚花園" },
         questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS))
     };
 
-    let playersMap = new Map(); // LINE ID -> { water, hasBloomed, lastDailyDate, claimHistory, totalClaims }
+    let playersMap = new Map();
 
-    // ---- 儲存與載入 ----
+    // ---- 本地儲存 ----
     function saveAll() {
         const toSave = {
             config: adminConfig,
             players: Array.from(playersMap.entries())
         };
         localStorage.setItem(CONFIG_KEY, JSON.stringify(toSave));
-        // 同時更新獨立玩家儲存 (讓遊戲頁面讀取)
         const playerObj = {};
         for (let [id, data] of playersMap.entries()) playerObj[id] = data;
         localStorage.setItem(PLAYERS_KEY, JSON.stringify(playerObj));
-        showMsg("✅ 所有設定已儲存至本機瀏覽器", "success");
+        showMsg("✅ 已儲存至本機", "success");
     }
 
     function loadAll() {
@@ -141,7 +156,8 @@
         // 補齊預設
         if (!adminConfig.questions || adminConfig.questions.length === 0) adminConfig.questions = [...DEFAULT_QUESTIONS];
         if (!adminConfig.appearance) adminConfig.appearance = { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 };
-        if (!adminConfig.rules) adminConfig.rules = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" };
+        if (!adminConfig.rules) adminConfig.rules = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example", gameName: "🌸 護膚花園" };
+        if (!adminConfig.rules.gameName) adminConfig.rules.gameName = "🌸 護膚花園";
 
         // 同步到 UI
         const a = adminConfig.appearance;
@@ -158,10 +174,11 @@
         document.getElementById('dailyWater').value = r.dailyWaterAmount;
         document.getElementById('quizReward').value = r.quizRewardAmount;
         document.getElementById('giftLink').value = r.giftCouponLink;
+        document.getElementById('gameName').value = r.gameName;
 
         document.getElementById('questionsEditor').value = JSON.stringify(adminConfig.questions, null, 2);
         renderPlayerTable();
-        showMsg("📀 資料載入完成", "success");
+        showMsg("📀 本地資料載入完成", "success");
     }
 
     function renderPlayerTable() {
@@ -170,24 +187,118 @@
         tbody.innerHTML = "";
         select.innerHTML = '<option value="">-- 選擇玩家 --</option>';
         for (let [id, data] of playersMap.entries()) {
-            const row = `<tr><td>${id.substring(0,16)}...</td><td>${data.water || 0}</td><td>${data.hasBloomed ? '🌸 開花' : '🌱 未開花'}</td><td>${data.totalClaims || 0}</td></tr>`;
+            const lastClaim = data.claimHistory?.length ? data.claimHistory[data.claimHistory.length-1].date : "無";
+            const row = `<tr><td title="${id}">${id.substring(0,16)}...</td><td>${data.water || 0}</td><td>${data.hasBloomed ? '🌸 開花' : '🌱 未開花'}</td><td>${data.totalClaims || 0}</td><td>${lastClaim}</td></tr>`;
             tbody.innerHTML += row;
             const option = document.createElement('option');
             option.value = id;
             option.textContent = `${id.substring(0,12)}... (${data.water || 0}滴)`;
             select.appendChild(option);
         }
-        if(playersMap.size === 0) tbody.innerHTML = '<tr><td colspan="4">尚無玩家，請透過遊戲頁面登入LINE綁定</td></tr>';
+        if(playersMap.size === 0) tbody.innerHTML = '<tr><td colspan="5">尚無玩家，請透過遊戲頁面登入LINE綁定</td></tr>';
     }
 
     function showMsg(msg, type = "info") {
         const box = document.getElementById('msgBox');
         box.textContent = msg;
-        box.className = `msg ${type === "success" ? "success" : (type === "error" ? "error" : "")}`;
-        setTimeout(() => { if(box.textContent === msg) box.textContent = "就緒"; box.className = "msg"; }, 2500);
+        box.className = `msg ${type === "success" ? "success" : (type === "error" ? "error" : type === "loading" ? "loading" : "")}`;
+        setTimeout(() => { if(box.textContent === msg) box.textContent = "就緒"; box.className = "msg"; }, 3000);
     }
 
-    // ---- 儲存動作 ----
+    // ========== 雲端同步函數 ==========
+    async function uploadToCloud() {
+        showMsg("☁️ 正在上傳到雲端...", "loading");
+        const payload = {
+            type: "UPDATE_CONFIG",
+            config: {
+                targetWater: adminConfig.rules.targetWater,
+                dailyWaterAmount: adminConfig.rules.dailyWaterAmount,
+                quizRewardAmount: adminConfig.rules.quizRewardAmount,
+                giftCouponLink: adminConfig.rules.giftCouponLink,
+                gameName: adminConfig.rules.gameName,
+                stemColor: adminConfig.appearance.stemColor,
+                leafColor: adminConfig.appearance.leafColor,
+                flowerColor: adminConfig.appearance.flowerColor,
+                stamenColor: adminConfig.appearance.stamenColor,
+                flowerType: adminConfig.appearance.flowerType,
+                petalCount: adminConfig.appearance.petalCount,
+                fallSpeed: adminConfig.appearance.fallSpeed,
+                questions: adminConfig.questions
+            },
+            players: Array.from(playersMap.entries()).map(([id, data]) => ({
+                userId: id,
+                water: data.water,
+                hasBloomed: data.hasBloomed,
+                lastDailyDate: data.lastDailyDate || "",
+                totalClaims: data.totalClaims || 0,
+                lastClaimDate: data.claimHistory?.length ? data.claimHistory[data.claimHistory.length-1].date : ""
+            }))
+        };
+        try {
+            await fetch(CLOUD_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            showMsg("✅ 已上傳至雲端！玩家遊戲頁面將會讀取新設定", "success");
+        } catch(e) {
+            showMsg("⚠️ 上傳失敗，請檢查網路", "error");
+        }
+    }
+
+    async function downloadFromCloud() {
+        showMsg("☁️ 正在從雲端下載...", "loading");
+        try {
+            const res = await fetch(CLOUD_URL);
+            const cloudData = await res.json();
+            if(cloudData.config) {
+                if(cloudData.config.targetWater) adminConfig.rules.targetWater = cloudData.config.targetWater;
+                if(cloudData.config.dailyWaterAmount) adminConfig.rules.dailyWaterAmount = cloudData.config.dailyWaterAmount;
+                if(cloudData.config.quizRewardAmount) adminConfig.rules.quizRewardAmount = cloudData.config.quizRewardAmount;
+                if(cloudData.config.giftCouponLink) adminConfig.rules.giftCouponLink = cloudData.config.giftCouponLink;
+                if(cloudData.config.gameName) adminConfig.rules.gameName = cloudData.config.gameName;
+                if(cloudData.config.stemColor) adminConfig.appearance.stemColor = cloudData.config.stemColor;
+                if(cloudData.config.leafColor) adminConfig.appearance.leafColor = cloudData.config.leafColor;
+                if(cloudData.config.flowerColor) adminConfig.appearance.flowerColor = cloudData.config.flowerColor;
+                if(cloudData.config.stamenColor) adminConfig.appearance.stamenColor = cloudData.config.stamenColor;
+                if(cloudData.config.flowerType) adminConfig.appearance.flowerType = cloudData.config.flowerType;
+                if(cloudData.config.petalCount) adminConfig.appearance.petalCount = cloudData.config.petalCount;
+                if(cloudData.config.fallSpeed) adminConfig.appearance.fallSpeed = cloudData.config.fallSpeed;
+                if(cloudData.config.questions && cloudData.config.questions.length) adminConfig.questions = cloudData.config.questions;
+            }
+            if(cloudData.players && cloudData.players.length) {
+                playersMap.clear();
+                for(let p of cloudData.players) {
+                    playersMap.set(p.userId, {
+                        water: p.water,
+                        hasBloomed: p.hasBloomed,
+                        lastDailyDate: p.lastDailyDate,
+                        claimHistory: p.lastClaimDate ? [{date: p.lastClaimDate}] : [],
+                        totalClaims: p.totalClaims || 0
+                    });
+                }
+            }
+            // 更新 UI
+            const a = adminConfig.appearance;
+            document.getElementById('stemColor').value = a.stemColor;
+            document.getElementById('leafColor').value = a.leafColor;
+            document.getElementById('flowerColor').value = a.flowerColor;
+            document.getElementById('stamenColor').value = a.stamenColor;
+            document.getElementById('flowerType').value = a.flowerType;
+            document.getElementById('petalCount').value = a.petalCount;
+            document.getElementById('fallSpeed').value = a.fallSpeed;
+            const r = adminConfig.rules;
+            document.getElementById('targetWater').value = r.targetWater;
+            document.getElementById('dailyWater').value = r.dailyWaterAmount;
+            document.getElementById('quizReward').value = r.quizRewardAmount;
+            document.getElementById('giftLink').value = r.giftCouponLink;
+            document.getElementById('gameName').value = r.gameName;
+            document.getElementById('questionsEditor').value = JSON.stringify(adminConfig.questions, null, 2);
+            renderPlayerTable();
+            saveAll();
+            showMsg("✅ 已從雲端同步最新設定！", "success");
+        } catch(e) {
+            showMsg("⚠️ 雲端下載失敗，請檢查網路後重試", "error");
+        }
+    }
+
+    // ---- 儲存動作 (本地) ----
     function saveAppearance() {
         adminConfig.appearance = {
             stemColor: document.getElementById('stemColor').value,
@@ -206,7 +317,8 @@
             targetWater: parseInt(document.getElementById('targetWater').value),
             dailyWaterAmount: parseInt(document.getElementById('dailyWater').value),
             quizRewardAmount: parseInt(document.getElementById('quizReward').value),
-            giftCouponLink: document.getElementById('giftLink').value
+            giftCouponLink: document.getElementById('giftLink').value,
+            gameName: document.getElementById('gameName').value
         };
         saveAll();
     }
@@ -256,10 +368,7 @@
     }
 
     function exportData() {
-        const exportObj = {
-            config: adminConfig,
-            players: Array.from(playersMap.entries())
-        };
+        const exportObj = { config: adminConfig, players: Array.from(playersMap.entries()) };
         const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: "application/json"});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -291,7 +400,7 @@
             localStorage.removeItem(PLAYERS_KEY);
             adminConfig = {
                 appearance: { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 },
-                rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" },
+                rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example", gameName: "🌸 護膚花園" },
                 questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS))
             };
             playersMap.clear();
@@ -302,6 +411,8 @@
     }
 
     // 事件綁定
+    document.getElementById('syncToCloudBtn').addEventListener('click', uploadToCloud);
+    document.getElementById('syncFromCloudBtn').addEventListener('click', downloadFromCloud);
     document.getElementById('saveAppearanceBtn').addEventListener('click', saveAppearance);
     document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
     document.getElementById('saveQuestionsBtn').addEventListener('click', saveQuestions);
