@@ -29,6 +29,40 @@
         .small-note { font-size: 0.7rem; margin-top: 6px; color: #a5713a; }
         .claim-history { background: #e8dcc8; border-radius: 28px; padding: 8px 12px; margin-top: 10px; font-size: 0.7rem; text-align: left; max-height: 100px; overflow-y: auto; }
     </style>
+    <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+
+    async function loadAll() {
+        // 先讀取本地緩存備援
+        const local = localStorage.getItem('berji_players');
+        if (local) playersMap = JSON.parse(local);
+
+        // 從 GAS 抓取雲端資料
+        try {
+            adminMsg("正在從 Google 試算表抓取數據...");
+            const response = await fetch(GAS_URL);
+            const cloudData = await response.json();
+            
+            // 將陣列格式 [ID, 水, 次數, 時間, 日期] 轉回對象格式
+            if (cloudData && cloudData.length > 1) {
+                cloudData.slice(1).forEach(row => {
+                    const [uid, water, count, time, reset] = row;
+                    if (uid) {
+                        playersMap[uid] = playersMap[uid] || { displayName: "雲端玩家", pictureUrl: "" };
+                        playersMap[uid].water = parseFloat(water);
+                        playersMap[uid].dailyCount = parseInt(count);
+                        playersMap[uid].lastWaterTime = time;
+                        playersMap[uid].lastResetDate = reset;
+                    }
+                });
+                adminMsg("雲端同步成功！");
+            }
+        } catch (e) { adminMsg("連線雲端失敗，顯示本地緩存資料"); }
+
+        renderAdminTable();
+        updatePlayerSelect();
+    }
+</script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="liff-init.js"></script>
 </head>
