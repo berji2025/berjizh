@@ -2,271 +2,318 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>護膚花園 - 獨立管理後台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>護膚花園 - 管理後台</title>
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; background: #d4e8cf; font-family: 'Segoe UI', 'Noto Sans TC', sans-serif; padding: 20px; }
-        .admin-container { max-width: 1200px; margin: 0 auto; background: #fffcf0; border-radius: 48px; padding: 24px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
-        .admin-title { font-size: 1.8rem; font-weight: bold; color: #4c6e2c; margin-bottom: 20px; border-bottom: 2px solid #e2cfaa; padding-bottom: 10px; }
-        .admin-section { margin-bottom: 28px; border-bottom: 2px dashed #e2cfaa; padding-bottom: 18px; }
-        .flex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-        label { font-weight: 600; display: block; margin-bottom: 4px; }
-        input, textarea, select { padding: 8px 12px; border-radius: 40px; border: 1px solid #c9aa6f; background: white; width: 100%; }
-        .admin-btn { background: #7ca85a; color: white; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; margin-top: 6px; }
-        .admin-btn:hover { background: #6b934d; }
-        .admin-btn-danger { background: #c73f1e; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 12px; }
-        th, td { padding: 10px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        body { font-family: 'Segoe UI', sans-serif; background: #d4e8cf; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; background: #fffcf0; border-radius: 40px; padding: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        h1 { color: #4c6e2c; border-bottom: 2px solid #e2cfaa; padding-bottom: 8px; }
+        .section { background: #fff8eb; border-radius: 28px; padding: 20px; margin-bottom: 24px; }
+        .flex { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+        .field { flex: 1; min-width: 150px; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; color: #5a4a2e; }
+        input, select, textarea { width: 100%; padding: 8px 12px; border-radius: 60px; border: 1px solid #c9aa6f; background: white; }
+        button { background: #7ca85a; color: white; border: none; padding: 8px 20px; border-radius: 60px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+        button:hover { background: #6b934d; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: left; }
         th { background: #e9dbbd; }
-        .game-link-box { background: #e9e2cf; border-radius: 20px; padding: 12px; text-align: center; margin-top: 8px; word-break: break-all; }
-        textarea { font-family: monospace; border-radius: 20px; height: 150px; }
-        #adminMsg { background: #e6ddb3; color: #4c6e2c; padding: 10px 20px; border-radius: 30px; margin-top: 15px; text-align: center; min-height: 45px; font-weight: bold; }
-        .success-msg { background: #c8e6c9 !important; color: #2e7d32 !important; }
-        .error-msg { background: #ffcdd2 !important; color: #c62828 !important; }
+        .msg { margin-top: 16px; padding: 10px; border-radius: 30px; text-align: center; background: #e6ddb3; }
+        .success { background: #c8e6c9; color: #2e7d32; }
+        .error { background: #ffcdd2; color: #c62828; }
     </style>
 </head>
 <body>
-<div class="admin-container">
-    <div class="admin-title">🌸 護膚花園・管理中心 (同步版)</div>
-    
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">🔗 快速連結</div>
-        <div class="game-link-box">
-            玩家遊戲網址：<a href="https://berji2025.github.io/berjizh/" target="_blank">https://berji2025.github.io/berjizh/</a>
-        </div>
-    </div>
+<div class="container">
+    <h1>🌸 護膚花園・管理後台</h1>
+    <p>所有設定會儲存在此瀏覽器中，<strong>不會影響其他玩家</strong>。若需雲端同步，請匯出設定檔。</p>
 
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">🎨 植物外觀設定 (存於本地/雲端)</div>
-        <div class="flex-row">
-            <div style="flex:1"><label>🌿 莖</label><input type="color" id="stemColor" value="#5a8f4c"></div>
-            <div style="flex:1"><label>🍃 葉</label><input type="color" id="leafColor" value="#6fbf4c"></div>
-            <div style="flex:1"><label>🌸 花</label><input type="color" id="flowerColor" value="#ffaa88"></div>
-            <div style="flex:1"><label>📍 花蕊</label><input type="color" id="stamenColor" value="#dd8844"></div>
+    <div class="section">
+        <h3>🎨 植物外觀</h3>
+        <div class="flex">
+            <div class="field"><label>🌿 莖顏色</label><input type="color" id="stemColor" value="#5a8f4c"></div>
+            <div class="field"><label>🍃 葉顏色</label><input type="color" id="leafColor" value="#6fbf4c"></div>
+            <div class="field"><label>🌸 花主色</label><input type="color" id="flowerColor" value="#ffaa88"></div>
+            <div class="field"><label>📍 花蕊色</label><input type="color" id="stamenColor" value="#dd8844"></div>
         </div>
-        <div class="flex-row" style="margin-top:10px;">
-            <div style="flex:1"><label>🌱 花種</label>
-                <select id="flowerTypeSelect">
+        <div class="flex">
+            <div class="field"><label>🌱 花種</label>
+                <select id="flowerType">
                     <option value="rose">🌹 玫瑰</option>
                     <option value="cherry">🌸 櫻花</option>
                     <option value="sunflower">🌻 向日葵</option>
                     <option value="lotus">🪷 蓮花</option>
                 </select>
             </div>
-            <div style="flex:1"><label>🍂 飄落數</label><input type="number" id="petalCount" value="10"></div>
-            <div style="flex:1"><label>🌬️ 速度</label><input type="range" id="fallSpeed" min="0.5" max="2.5" step="0.1" value="1.2"></div>
+            <div class="field"><label>🍂 飄落數量</label><input type="number" id="petalCount" value="10"></div>
+            <div class="field"><label>🌬️ 飄落速度</label><input type="range" id="fallSpeed" min="0.5" max="2.5" step="0.1" value="1.2"></div>
         </div>
-        <button class="admin-btn" onclick="handleSaveAppearance()">💾 儲存外觀並同步</button>
+        <button id="saveAppearanceBtn">💾 儲存外觀設定</button>
     </div>
 
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">⚙️ 遊戲核心設定</div>
-        <div class="flex-row">
-            <div style="flex:1"><label>🌸 開花門檻</label><input type="number" id="targetWaterSetting" value="660"></div>
-            <div style="flex:1"><label>💧 日常給水</label><input type="number" id="dailyWaterAmount" value="20"></div>
-            <div style="flex:1"><label>📖 答題給水</label><input type="number" id="quizRewardAmount" value="50"></div>
+    <div class="section">
+        <h3>⚙️ 遊戲規則</h3>
+        <div class="flex">
+            <div class="field"><label>🌸 開花門檻 (水滴)</label><input type="number" id="targetWater" value="660"></div>
+            <div class="field"><label>💧 日常澆水給水</label><input type="number" id="dailyWater" value="20"></div>
+            <div class="field"><label>📖 答題給水</label><input type="number" id="quizReward" value="50"></div>
+            <div class="field"><label>🎁 兌換券連結</label><input type="url" id="giftLink" value="https://lin.ee/example"></div>
         </div>
-        <div class="flex-row" style="margin-top:10px;">
-            <div style="flex:1"><label>🎁 兌換連結 (LINE)</label><input type="url" id="giftCouponUrl" value="https://lin.ee/example"></div>
-        </div>
-        <button class="admin-btn" onclick="handleSaveGameSettings()">💾 儲存數值並同步</button>
+        <button id="saveRulesBtn">💾 儲存遊戲規則</button>
     </div>
 
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">📚 護膚題庫 (JSON)</div>
-        <textarea id="questionsEditor"></textarea>
-        <button class="admin-btn" onclick="handleUpdateQuestions()">✏️ 更新雲端題庫</button>
+    <div class="section">
+        <h3>📚 題庫管理 (JSON格式)</h3>
+        <textarea id="questionsEditor" rows="8" style="width:100%; border-radius:20px; font-family:monospace;"></textarea>
+        <button id="saveQuestionsBtn">📖 儲存題庫</button>
+        <button id="resetDefaultBtn">↺ 重置預設題庫</button>
     </div>
 
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">👥 玩家資料庫</div>
-        <div style="overflow-x: auto;">
-            <table>
-                <thead><tr><th>LINE ID</th><th>水量</th><th>狀態</th><th>操作</th></tr></thead>
-                <tbody id="playersTbody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="admin-section">
-        <div class="admin-title" style="font-size:1.2rem;">🛠️ 手動加水</div>
-        <div class="flex-row">
-            <select id="selectPlayerForEdit" style="flex:2;"></select>
-            <input type="number" id="editWaterAmount" placeholder="增加水量" style="flex:1;">
-            <button class="admin-btn" onclick="handleManualAddWater()">➕ 執行加水</button>
+    <div class="section">
+        <h3>📋 玩家進度 (此瀏覽器)</h3>
+        <div style="overflow-x:auto;"><table id="playerTable"><thead><tr><th>LINE ID</th><th>水滴量</th><th>開花狀態</th><th>領取次數</th></tr></thead><tbody id="playerTbody"></tbody></table></div>
+        <div class="flex" style="margin-top:12px;">
+            <select id="playerSelect" style="flex:2;"></select>
+            <input type="number" id="addWaterAmount" placeholder="增加水滴" style="flex:1;">
+            <button id="addWaterBtn">💧 增加水滴</button>
+            <button id="resetPlayerBtn">♻️ 重置該玩家</button>
         </div>
     </div>
 
-    <div id="adminMsg">系統就緒</div>
+    <div class="section">
+        <h3>📦 備份與還原</h3>
+        <button id="exportBtn">📥 匯出所有設定與玩家資料</button>
+        <input type="file" id="importFile" accept=".json" style="display:none;">
+        <button id="importBtn">📤 匯入備份還原</button>
+        <button id="clearAllBtn" style="background:#c73f1e;">⚠️ 清除所有資料 (重置)</button>
+    </div>
+
+    <div id="msgBox" class="msg">就緒</div>
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
-    
-    // 儲存金鑰
-    const STORAGE_KEY = "flower_advanced_config"; 
+    // 儲存用的 key
+    const CONFIG_KEY = "flower_admin_config";
+    const PLAYERS_KEY = "flower_advanced_players";
 
-    let playersMap = {};
-    let fullConfig = {
-        settings: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "" },
+    // 預設題庫
+    const DEFAULT_QUESTIONS = [
+        { text: "旅行時肌膚容易乾燥，哪種保養品最適合隨身攜帶？", options: ["保濕噴霧", "卸妝油", "磨砂膏", "A醇精華"], correct: 0 },
+        { text: "搭飛機時，機艙乾燥，護膚重點是什麼？", options: ["加強保濕鎖水", "去角質", "使用高濃度酸類", "完全不保養"], correct: 0 },
+        { text: "吃太多甜食可能導致肌膚哪種問題？", options: ["糖化反應膠原蛋白流失", "變白", "減少出油", "毛孔縮小"], correct: 0 },
+        { text: "日常防曬最主要的目的？", options: ["防止光老化與皮膚癌", "防止出油", "防止痘痘", "保濕"], correct: 0 },
+        { text: "抗老明星成分A醇(Retinol)使用注意事項？", options: ["需建立耐受並夜間使用", "早上使用效果佳", "可與高濃度酸類疊加", "孕婦安心用"], correct: 0 }
+    ];
+
+    // 初始化設定
+    let adminConfig = {
         appearance: { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 },
-        questions: []
+        rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" },
+        questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS))
     };
 
-    function showMsg(text, isError = false) {
-        const el = document.getElementById('adminMsg');
-        el.innerText = text;
-        el.className = isError ? "error-msg" : "success-msg";
-        console.log(text);
+    let playersMap = new Map(); // LINE ID -> { water, hasBloomed, lastDailyDate, claimHistory, totalClaims }
+
+    // ---- 儲存與載入 ----
+    function saveAll() {
+        const toSave = {
+            config: adminConfig,
+            players: Array.from(playersMap.entries())
+        };
+        localStorage.setItem(CONFIG_KEY, JSON.stringify(toSave));
+        // 同時更新獨立玩家儲存 (讓遊戲頁面讀取)
+        const playerObj = {};
+        for (let [id, data] of playersMap.entries()) playerObj[id] = data;
+        localStorage.setItem(PLAYERS_KEY, JSON.stringify(playerObj));
+        showMsg("✅ 所有設定已儲存至本機瀏覽器", "success");
     }
 
-    // 初始化讀取
-    async function init() {
-        showMsg("🔄 正在載入雲端與本地資料...");
-        
-        // 1. 先抓本地
-        const local = localStorage.getItem(STORAGE_KEY);
-        if(local) fullConfig = JSON.parse(local);
-
-        try {
-            // 2. 抓雲端
-            const res = await fetch(GAS_URL);
-            const data = await res.json();
-            
-            if (data.config) {
-                // 如果雲端有更完整的設定，合併它
-                fullConfig.settings = data.config.settings || fullConfig.settings;
-                fullConfig.appearance = data.config.appearance || fullConfig.appearance;
-                fullConfig.questions = data.config.questions || data.config.questionBank || [];
-            }
-
-            if (data.players) {
-                // 雲端玩家資料轉換
-                data.players.slice(1).forEach(row => {
-                    if(row[0]) playersMap[row[0]] = { water: parseFloat(row[1]) || 0 };
-                });
-            }
-            
-            updateUI();
-            showMsg("✅ 資料已同步");
-        } catch(e) {
-            showMsg("⚠️ 雲端連線失敗，目前顯示本地緩存", true);
-            updateUI();
+    function loadAll() {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        if (raw) {
+            try {
+                const data = JSON.parse(raw);
+                if (data.config) adminConfig = data.config;
+                if (data.players) playersMap = new Map(data.players);
+            } catch(e) { console.warn(e); }
         }
-    }
+        // 補齊預設
+        if (!adminConfig.questions || adminConfig.questions.length === 0) adminConfig.questions = [...DEFAULT_QUESTIONS];
+        if (!adminConfig.appearance) adminConfig.appearance = { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 };
+        if (!adminConfig.rules) adminConfig.rules = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" };
 
-    function updateUI() {
-        // 填入 UI 欄位
-        const s = fullConfig.settings;
-        const a = fullConfig.appearance;
-        
-        document.getElementById('targetWaterSetting').value = s.targetWater;
-        document.getElementById('dailyWaterAmount').value = s.dailyWaterAmount;
-        document.getElementById('quizRewardAmount').value = s.quizRewardAmount;
-        document.getElementById('giftCouponUrl').value = s.giftCouponLink;
-
+        // 同步到 UI
+        const a = adminConfig.appearance;
         document.getElementById('stemColor').value = a.stemColor;
         document.getElementById('leafColor').value = a.leafColor;
         document.getElementById('flowerColor').value = a.flowerColor;
         document.getElementById('stamenColor').value = a.stamenColor;
-        document.getElementById('flowerTypeSelect').value = a.flowerType;
+        document.getElementById('flowerType').value = a.flowerType;
         document.getElementById('petalCount').value = a.petalCount;
         document.getElementById('fallSpeed').value = a.fallSpeed;
 
-        document.getElementById('questionsEditor').value = JSON.stringify(fullConfig.questions, null, 2);
+        const r = adminConfig.rules;
+        document.getElementById('targetWater').value = r.targetWater;
+        document.getElementById('dailyWater').value = r.dailyWaterAmount;
+        document.getElementById('quizReward').value = r.quizRewardAmount;
+        document.getElementById('giftLink').value = r.giftCouponLink;
 
-        renderTable();
+        document.getElementById('questionsEditor').value = JSON.stringify(adminConfig.questions, null, 2);
+        renderPlayerTable();
+        showMsg("📀 資料載入完成", "success");
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('playersTbody');
-        const sel = document.getElementById('selectPlayerForEdit');
+    function renderPlayerTable() {
+        const tbody = document.getElementById('playerTbody');
+        const select = document.getElementById('playerSelect');
         tbody.innerHTML = "";
-        sel.innerHTML = '<option value="">-- 選擇玩家 --</option>';
-
-        Object.keys(playersMap).forEach(id => {
-            const p = playersMap[id];
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${id.substring(0,12)}...</td><td>${p.water}</td><td>${p.water >= fullConfig.settings.targetWater ? '🌸' : '🌱'}</td><td><button onclick="document.getElementById('selectPlayerForEdit').value='${id}'">選取</button></td>`;
-            tbody.appendChild(tr);
-
-            const opt = document.createElement('option');
-            opt.value = id; opt.text = id.substring(0,10); sel.appendChild(opt);
-        });
-    }
-
-    // --- 儲存動作 ---
-
-    async function syncToCloud() {
-        showMsg("⏳ 正在同步至雲端...");
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(fullConfig));
-        try {
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ type: 'UPDATE_CONFIG', config: fullConfig })
-            });
-            showMsg("✅ 雲端同步完成！(刷新後生效)");
-        } catch(e) {
-            showMsg("❌ 雲端同步失敗", true);
+        select.innerHTML = '<option value="">-- 選擇玩家 --</option>';
+        for (let [id, data] of playersMap.entries()) {
+            const row = `<tr><td>${id.substring(0,16)}...</td><td>${data.water || 0}</td><td>${data.hasBloomed ? '🌸 開花' : '🌱 未開花'}</td><td>${data.totalClaims || 0}</td></tr>`;
+            tbody.innerHTML += row;
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = `${id.substring(0,12)}... (${data.water || 0}滴)`;
+            select.appendChild(option);
         }
+        if(playersMap.size === 0) tbody.innerHTML = '<tr><td colspan="4">尚無玩家，請透過遊戲頁面登入LINE綁定</td></tr>';
     }
 
-    function handleSaveAppearance() {
-        fullConfig.appearance = {
+    function showMsg(msg, type = "info") {
+        const box = document.getElementById('msgBox');
+        box.textContent = msg;
+        box.className = `msg ${type === "success" ? "success" : (type === "error" ? "error" : "")}`;
+        setTimeout(() => { if(box.textContent === msg) box.textContent = "就緒"; box.className = "msg"; }, 2500);
+    }
+
+    // ---- 儲存動作 ----
+    function saveAppearance() {
+        adminConfig.appearance = {
             stemColor: document.getElementById('stemColor').value,
             leafColor: document.getElementById('leafColor').value,
             flowerColor: document.getElementById('flowerColor').value,
             stamenColor: document.getElementById('stamenColor').value,
-            flowerType: document.getElementById('flowerTypeSelect').value,
+            flowerType: document.getElementById('flowerType').value,
             petalCount: parseInt(document.getElementById('petalCount').value),
             fallSpeed: parseFloat(document.getElementById('fallSpeed').value)
         };
-        syncToCloud();
+        saveAll();
     }
 
-    function handleSaveGameSettings() {
-        fullConfig.settings = {
-            targetWater: parseInt(document.getElementById('targetWaterSetting').value),
-            dailyWaterAmount: parseInt(document.getElementById('dailyWaterAmount').value),
-            quizRewardAmount: parseInt(document.getElementById('quizRewardAmount').value),
-            giftCouponLink: document.getElementById('giftCouponUrl').value
+    function saveRules() {
+        adminConfig.rules = {
+            targetWater: parseInt(document.getElementById('targetWater').value),
+            dailyWaterAmount: parseInt(document.getElementById('dailyWater').value),
+            quizRewardAmount: parseInt(document.getElementById('quizReward').value),
+            giftCouponLink: document.getElementById('giftLink').value
         };
-        syncToCloud();
+        saveAll();
     }
 
-    function handleUpdateQuestions() {
+    function saveQuestions() {
         try {
-            fullConfig.questions = JSON.parse(document.getElementById('questionsEditor').value);
-            syncToCloud();
-        } catch(e) { alert("JSON 格式有誤"); }
+            const q = JSON.parse(document.getElementById('questionsEditor').value);
+            if(Array.isArray(q) && q.length) {
+                adminConfig.questions = q;
+                saveAll();
+            } else throw new Error();
+        } catch(e) { showMsg("❌ JSON 格式錯誤，請檢查", "error"); }
     }
 
-    async function handleManualAddWater() {
-        const id = document.getElementById('selectPlayerForEdit').value;
-        const add = parseFloat(document.getElementById('editWaterAmount').value) || 0;
-        if(!id) return alert("請選玩家");
-        
-        playersMap[id].water += add;
-        showMsg("⏳ 正在更新玩家水量...");
-        
-        await fetch(GAS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({
-                userId: id,
-                water: playersMap[id].water,
-                dailyCount: 0,
-                lastWaterTime: new Date().getTime(),
-                lastResetDate: ""
-            })
-        });
-        renderTable();
-        showMsg("✅ 玩家水量已更新");
+    function resetDefaultQuestions() {
+        adminConfig.questions = JSON.parse(JSON.stringify(DEFAULT_QUESTIONS));
+        document.getElementById('questionsEditor').value = JSON.stringify(adminConfig.questions, null, 2);
+        saveAll();
     }
 
-    window.onload = init;
+    function addWaterToPlayer() {
+        const playerId = document.getElementById('playerSelect').value;
+        if(!playerId) { showMsg("請選擇玩家", "error"); return; }
+        const addVal = parseInt(document.getElementById('addWaterAmount').value);
+        if(isNaN(addVal) || addVal <= 0) { showMsg("請輸入有效的水滴數量", "error"); return; }
+        const player = playersMap.get(playerId);
+        if(player.hasBloomed) { showMsg("玩家已開花，請先讓玩家重新栽種", "error"); return; }
+        player.water = (player.water || 0) + addVal;
+        if(player.water >= adminConfig.rules.targetWater) {
+            player.water = adminConfig.rules.targetWater;
+            player.hasBloomed = true;
+        }
+        saveAll();
+        renderPlayerTable();
+        showMsg(`✅ 已增加 ${addVal} 滴，目前水量 ${player.water}`);
+    }
+
+    function resetPlayer() {
+        const playerId = document.getElementById('playerSelect').value;
+        if(!playerId) { showMsg("請選擇玩家", "error"); return; }
+        if(confirm(`確定重置玩家 ${playerId.substring(0,12)} 的所有進度？`)) {
+            playersMap.delete(playerId);
+            saveAll();
+            renderPlayerTable();
+            showMsg(`✅ 玩家已重置`);
+        }
+    }
+
+    function exportData() {
+        const exportObj = {
+            config: adminConfig,
+            players: Array.from(playersMap.entries())
+        };
+        const blob = new Blob([JSON.stringify(exportObj, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `flower_backup_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showMsg("📥 備份已匯出", "success");
+    }
+
+    function importData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.config) adminConfig = data.config;
+                if(data.players) playersMap = new Map(data.players);
+                saveAll();
+                loadAll();
+                showMsg("✅ 還原成功！", "success");
+            } catch(err) { showMsg("❌ 還原失敗，檔案格式錯誤", "error"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function clearAllData() {
+        if(confirm("⚠️ 這將會清除所有玩家資料與設定，確定嗎？")) {
+            localStorage.removeItem(CONFIG_KEY);
+            localStorage.removeItem(PLAYERS_KEY);
+            adminConfig = {
+                appearance: { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 },
+                rules: { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" },
+                questions: JSON.parse(JSON.stringify(DEFAULT_QUESTIONS))
+            };
+            playersMap.clear();
+            saveAll();
+            loadAll();
+            showMsg("🔄 所有資料已重置", "success");
+        }
+    }
+
+    // 事件綁定
+    document.getElementById('saveAppearanceBtn').addEventListener('click', saveAppearance);
+    document.getElementById('saveRulesBtn').addEventListener('click', saveRules);
+    document.getElementById('saveQuestionsBtn').addEventListener('click', saveQuestions);
+    document.getElementById('resetDefaultBtn').addEventListener('click', resetDefaultQuestions);
+    document.getElementById('addWaterBtn').addEventListener('click', addWaterToPlayer);
+    document.getElementById('resetPlayerBtn').addEventListener('click', resetPlayer);
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', (e) => { if(e.target.files[0]) importData(e.target.files[0]); e.target.value = ''; });
+    document.getElementById('clearAllBtn').addEventListener('click', clearAllData);
+
+    loadAll();
 </script>
 </body>
 </html>
