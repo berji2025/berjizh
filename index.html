@@ -336,6 +336,35 @@
         });
     }
 
+    async function initGame() { 
+    // --- 1. 關鍵：強迫從雲端抓取管理員設定 ---
+    try {
+        const response = await fetch(GAS_URL); // 去 GAS 抓你在後台存進試算表的資料
+        const cloudData = await response.json();
+        
+        if (cloudData.config) {
+            // 同步外觀 (顏色、種類)
+            if (cloudData.config.appearance) {
+                plantAppearance = { ...plantAppearance, ...cloudData.config.appearance };
+            }
+            // 同步規則 (目標水量、每日水量)
+            if (cloudData.config.settings) {
+                gameSettings = { ...gameSettings, ...cloudData.config.settings };
+                // 同步更新 UI 上的數字
+                document.getElementById('targetWater').innerText = gameSettings.targetWater;
+            }
+            // 同步題庫
+            if (cloudData.config.questions) {
+                gameSettings.questionBank = cloudData.config.questions;
+            }
+        }
+    } catch (e) {
+        console.warn("無法取得雲端配置，改讀取本地備份");
+        // 如果雲端抓不到，才讀取原本的 LocalStorage
+        loadGameSettings(); 
+    }
+
+    // --- 2. 接著才進行原有的 Canvas 與 LINE 初始化 ---
     function initGame() { 
         loadGameSettings(); 
         const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); 
