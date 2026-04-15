@@ -69,6 +69,70 @@
 </div>
 
 <script>
+    // 1. 定義您的雲端網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+
+    // 2. 修正澆水邏輯 (保留您原有的動畫 addWaterAndSplash)
+    async function dailyWaterPreview() {
+        if (!previewLineId) { showPreviewMsg("請登入 LINE 綁定玩家身分"); return; }
+
+        const now = new Date();
+        const today = now.toLocaleDateString('zh-TW');
+
+        // 跨日檢查：重置每日次數
+        if (previewPlayerData.lastResetDate !== today) {
+            previewPlayerData.dailyCount = 0;
+            previewPlayerData.lastResetDate = today;
+        }
+
+        // 檢查次數限制
+        if (previewPlayerData.dailyCount >= 3) {
+            showPreviewMsg("今日 3 次澆水已達上限 (3/3)！");
+            return;
+        }
+
+        // 檢查冷卻時間 (8 小時)
+        if (previewPlayerData.lastWaterTime) {
+            const lastTime = new Date(previewPlayerData.lastWaterTime);
+            const hoursPassed = (now - lastTime) / (1000 * 60 * 60);
+            if (hoursPassed < 8) {
+                const remain = (8 - hoursPassed).toFixed(1);
+                showPreviewMsg(`花朵還不渴，請等待 ${remain} 小時再澆水`);
+                return;
+            }
+        }
+
+        // 執行加水與您的動畫模組
+        previewPlayerData.dailyCount++;
+        previewPlayerData.lastWaterTime = now.toISOString();
+        
+        // 此處呼叫您原本定義好的動畫函式
+        addWaterAndSplash(gameSettings.dailyWaterAmount, 'daily');
+        
+        showPreviewMsg(`💧 澆水成功！(今日第 ${previewPlayerData.dailyCount} 次)`);
+        
+        // 同步到雲端
+        await syncToCloud();
+    }
+
+    // 3. 雲端同步函式
+    async function syncToCloud() {
+        localStorage.setItem('berji_players', JSON.stringify(playersMap));
+        try {
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    userId: previewLineId,
+                    water: previewPlayerData.water,
+                    dailyCount: previewPlayerData.dailyCount,
+                    lastWaterTime: previewPlayerData.lastWaterTime,
+                    lastResetDate: previewPlayerData.lastResetDate
+                })
+            });
+        } catch(e) { console.error("雲端同步異常"); }
+    }
+</script>
     // ========== 儲存KEY ==========
     const STORAGE_PLAYERS = "flower_advanced_players";
     const STORAGE_SETTINGS = "flower_advanced_settings";
