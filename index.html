@@ -29,46 +29,7 @@
         .small-note { font-size: 0.7rem; margin-top: 6px; color: #a5713a; }
         .claim-history { background: #e8dcc8; border-radius: 28px; padding: 8px 12px; margin-top: 10px; font-size: 0.7rem; text-align: left; max-height: 100px; overflow-y: auto; }
     </style>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="liff-init.js"></script>
-</head>
-<body>
-<div class="game-container">
-    <div class="pot-area">
-        <div class="plant-canvas-container">
-            <canvas id="gameCanvas" width="340" height="230" style="width:100%;height:auto;max-width:340px;"></canvas>
-        </div>
-        <div class="stage-text" id="stageLabel">萌芽期</div>
-    </div>
-    <div class="water-progress"><div class="water-fill" id="waterFill">0滴</div></div>
-    <div class="water-stats"><span>💧 水滴: <span id="waterAmount">0</span> / <span id="targetWater">660</span></span><span>🌸 開花門檻</span></div>
-    <div class="button-group">
-        <button class="btn" id="dailyBtn">💧 日常澆水 (+20)</button>
-        <button class="btn btn-primary" id="quizBtn">🌿 答題澆水 (+50)</button>
-    </div>
-    <div class="quiz-panel" id="quizPanel">
-        <div id="questionText"></div>
-        <div id="optionsContainer" class="quiz-options"></div>
-        <div id="quizFeedback" style="margin:8px 0;"></div>
-        <button class="btn" id="submitBtn" style="background:#5fa04f;">提交答案</button>
-    </div>
-    <div class="line-section">
-        <div>🔗 需登入LINE才能遊玩</div>
-        <button class="btn btn-line" id="lineBindBtn">✅ 登入 LINE 綁定</button>
-        <div id="lineMsg" style="font-size:0.7rem;"></div>
-        <div id="giftArea" style="display:none;">
-            <div class="gift-box">
-                <button class="btn" id="claimGiftBtn">🎁 領取兌換券</button>
-                <button class="btn reset-btn-small" id="resetPlantBtn">🌱 重新栽種</button>
-                <div id="giftResult"></div>
-                <div id="claimHistory" class="claim-history"></div>
-            </div>
-        </div>
-        <div class="small-note">※ 每日日常澆水限1次・答題無限制・領取兌換券後可重新栽種</div>
-    </div>
-</div>
-
-<script>
+    <script>
     // 1. 定義您的雲端網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
 
@@ -133,6 +94,46 @@
         } catch(e) { console.error("雲端同步異常"); }
     }
 </script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="liff-init.js"></script>
+</head>
+<body>
+<div class="game-container">
+    <div class="pot-area">
+        <div class="plant-canvas-container">
+            <canvas id="gameCanvas" width="340" height="230" style="width:100%;height:auto;max-width:340px;"></canvas>
+        </div>
+        <div class="stage-text" id="stageLabel">萌芽期</div>
+    </div>
+    <div class="water-progress"><div class="water-fill" id="waterFill">0滴</div></div>
+    <div class="water-stats"><span>💧 水滴: <span id="waterAmount">0</span> / <span id="targetWater">660</span></span><span>🌸 開花門檻</span></div>
+    <div class="button-group">
+        <button class="btn" id="dailyBtn">💧 日常澆水 (+20)</button>
+        <button class="btn btn-primary" id="quizBtn">🌿 答題澆水 (+50)</button>
+    </div>
+    <div class="quiz-panel" id="quizPanel">
+        <div id="questionText"></div>
+        <div id="optionsContainer" class="quiz-options"></div>
+        <div id="quizFeedback" style="margin:8px 0;"></div>
+        <button class="btn" id="submitBtn" style="background:#5fa04f;">提交答案</button>
+    </div>
+    <div class="line-section">
+        <div>🔗 需登入LINE才能遊玩</div>
+        <button class="btn btn-line" id="lineBindBtn">✅ 登入 LINE 綁定</button>
+        <div id="lineMsg" style="font-size:0.7rem;"></div>
+        <div id="giftArea" style="display:none;">
+            <div class="gift-box">
+                <button class="btn" id="claimGiftBtn">🎁 領取兌換券</button>
+                <button class="btn reset-btn-small" id="resetPlantBtn">🌱 重新栽種</button>
+                <div id="giftResult"></div>
+                <div id="claimHistory" class="claim-history"></div>
+            </div>
+        </div>
+        <div class="small-note">※ 每日日常澆水限1次・答題無限制・領取兌換券後可重新栽種</div>
+    </div>
+</div>
+
+<script>
     // ========== 儲存KEY ==========
     const STORAGE_PLAYERS = "flower_advanced_players";
     const STORAGE_SETTINGS = "flower_advanced_settings";
@@ -223,7 +224,13 @@
     function triggerWaterSplash(x,y) { for(let i=0;i<14;i++) waterSplashEffects.push({ x:x+(Math.random()-0.5)*35, y:y+(Math.random()-0.5)*25, life:1.0 }); }
 
     function updateUI() {
-        if(!currentPlayerData) { document.getElementById('stageLabel').innerText="未登入"; return; }
+        if(!currentPlayerData) { 
+            document.getElementById('stageLabel').innerText="未登入";
+            document.getElementById('waterFill').style.width='0%';
+            document.getElementById('waterFill').innerText='0滴';
+            document.getElementById('waterAmount').innerText='0';
+            return; 
+        }
         const water=currentPlayerData.water||0, target=gameSettings.targetWater, percent=Math.min(100,(water/target)*100);
         document.getElementById('waterFill').style.width=`${percent}%`;
         document.getElementById('waterFill').innerText=`${Math.floor(water)}/${target}`;
@@ -239,8 +246,14 @@
         if(currentPlayerData.hasBloomed){
             giftDiv.style.display="block";
             const historyDiv=document.getElementById('claimHistory');
-            if(historyDiv && currentPlayerData.claimHistory) historyDiv.innerHTML=`📜 領取紀錄: ${currentPlayerData.claimHistory.map(h=>h.date).join('<br>')}`;
-        } else giftDiv.style.display="none";
+            if(historyDiv && currentPlayerData.claimHistory && currentPlayerData.claimHistory.length>0){
+                historyDiv.innerHTML = `📜 領取紀錄: ${currentPlayerData.claimHistory.map(h => h.date).join('<br>')}`;
+            } else if(historyDiv){
+                historyDiv.innerHTML = '📜 尚無領取紀錄';
+            }
+        } else {
+            giftDiv.style.display="none";
+        }
     }
 
     function addWater(delta, source) {
@@ -275,12 +288,84 @@
     function resetAndReplant() { if(!currentPlayerData) return; currentPlayerData.water=0; currentPlayerData.hasBloomed=false; currentPlayerData.lastDailyDate=null; persistPlayerData(); updateUI(); document.getElementById('quizFeedback').innerHTML="🌱 已重新栽種，花朵重生！繼續澆水吧～"; }
     function claimGift() { if(!currentPlayerData){ alert("請先登入LINE"); return; } if(!currentPlayerData.hasBloomed){ document.getElementById('giftResult').innerHTML="花朵尚未盛開，無法領取"; return; } const link=gameSettings.giftCouponLink; const today=new Date().toLocaleString('zh-TW'); if(!currentPlayerData.claimHistory) currentPlayerData.claimHistory=[]; currentPlayerData.claimHistory.push({ date:today, giftLink:link }); currentPlayerData.totalClaims=(currentPlayerData.totalClaims||0)+1; persistPlayerData(); updateUI(); window.open(link,"_blank"); document.getElementById('giftResult').innerHTML=`✅ 第${currentPlayerData.totalClaims}次領取成功！`; }
 
-    function persistPlayerData() { const obj={}; for(let [id,data] of playersMap.entries()) obj[id]=data; localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(obj)); }
-    function loadGameSettings() { const raw=localStorage.getItem(STORAGE_SETTINGS); if(raw){ try{ const saved=JSON.parse(raw); gameSettings={...gameSettings,...saved}; if(!gameSettings.questionBank?.length) gameSettings.questionBank=[...DEFAULT_QUESTION_BANK]; } catch(e){} } document.getElementById('targetWater').innerText=gameSettings.targetWater; }
+    function persistPlayerData() { 
+        const obj={}; 
+        for(let [id,data] of playersMap.entries()) obj[id]=data; 
+        localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(obj)); 
+    }
+    
+    function loadGameSettings() { 
+        const raw=localStorage.getItem(STORAGE_SETTINGS); 
+        if(raw){ 
+            try{ 
+                const saved=JSON.parse(raw); 
+                gameSettings={...gameSettings,...saved}; 
+                if(!gameSettings.questionBank?.length) gameSettings.questionBank=[...DEFAULT_QUESTION_BANK]; 
+            } catch(e){} 
+        } 
+        document.getElementById('targetWater').innerText=gameSettings.targetWater; 
+    }
 
-    function oneKeyBind() { if(!window.liff){ alert("LINE套件載入中"); return; } if(!liff.isLoggedIn()){ liff.login(); return; } liff.getProfile().then(profile=>{ const realLineId=profile.userId; if(playersMap.has(realLineId)) currentPlayerData=playersMap.get(realLineId); else { const newPlayer={ water:0, hasBloomed:false, lastDailyDate:null, claimHistory:[], totalClaims:0 }; playersMap.set(realLineId,newPlayer); currentPlayerData=newPlayer; persistPlayerData(); } currentLineId=realLineId; document.getElementById('lineMsg').innerHTML=`✅ 綁定成功！`; document.getElementById('lineBindBtn').disabled=true; document.getElementById('lineBindBtn').innerText="🔗 已登入"; updateUI(); }).catch(err=>{ alert("取得LINE資料失敗，請重新登入"); liff.logout(); liff.login(); }); }
+    // 修正後的綁定邏輯
+    function oneKeyBind() {
+        if(!window.liff){ alert("LINE套件載入中，請稍後"); return; }
+        if(!liff.isLoggedIn()){
+            liff.login();
+            return;
+        }
+        liff.getProfile().then(profile => {
+            const realLineId = profile.userId;
+            if(playersMap.has(realLineId)){
+                currentPlayerData = playersMap.get(realLineId);
+            } else {
+                const newPlayer = { water: 0, hasBloomed: false, lastDailyDate: null, claimHistory: [], totalClaims: 0 };
+                playersMap.set(realLineId, newPlayer);
+                currentPlayerData = newPlayer;
+                persistPlayerData();
+            }
+            currentLineId = realLineId;
+            document.getElementById('lineMsg').innerHTML = `✅ 綁定成功！ LINE ID: ${realLineId.substring(0,12)}...`;
+            document.getElementById('lineBindBtn').disabled = true;
+            document.getElementById('lineBindBtn').innerText = "🔗 已登入";
+            updateUI();
+        }).catch(err => {
+            console.error(err);
+            alert("取得LINE資料失敗，請重新登入");
+            liff.logout();
+            liff.login();
+        });
+    }
 
-    function initGame() { loadGameSettings(); const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); if(rawPlayers){ try{ const obj=JSON.parse(rawPlayers); playersMap.clear(); for(let [id,val] of Object.entries(obj)) playersMap.set(id,val); } catch(e){} } canvas=document.getElementById('gameCanvas'); if(canvas){ canvas.width=340; canvas.height=230; ctx=canvas.getContext('2d'); initFallingParticles(); animateCanvas(); } document.getElementById('dailyBtn').addEventListener('click', dailyWater); document.getElementById('quizBtn').addEventListener('click', showQuizPanel); document.getElementById('submitBtn').addEventListener('click', submitQuiz); document.getElementById('lineBindBtn').addEventListener('click', oneKeyBind); document.getElementById('claimGiftBtn').addEventListener('click', claimGift); document.getElementById('resetPlantBtn').addEventListener('click', resetAndReplant); }
+    function initGame() { 
+        loadGameSettings(); 
+        const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); 
+        if(rawPlayers){ 
+            try{ 
+                const obj=JSON.parse(rawPlayers); 
+                playersMap.clear(); 
+                for(let [id,val] of Object.entries(obj)) playersMap.set(id,val); 
+            } catch(e){} 
+        } 
+        canvas=document.getElementById('gameCanvas'); 
+        if(canvas){ 
+            canvas.width=340; 
+            canvas.height=230; 
+            ctx=canvas.getContext('2d'); 
+            initFallingParticles(); 
+            animateCanvas(); 
+        } 
+        document.getElementById('dailyBtn').addEventListener('click', dailyWater); 
+        document.getElementById('quizBtn').addEventListener('click', showQuizPanel); 
+        document.getElementById('submitBtn').addEventListener('click', submitQuiz); 
+        document.getElementById('lineBindBtn').addEventListener('click', oneKeyBind); 
+        document.getElementById('claimGiftBtn').addEventListener('click', claimGift); 
+        document.getElementById('resetPlantBtn').addEventListener('click', resetAndReplant); 
+        
+        // 如果 LIFF 已經登入，自動綁定
+        if(window.liff && liff.isLoggedIn()){
+            oneKeyBind();
+        }
+    }
     initGame();
 </script>
 </body>
