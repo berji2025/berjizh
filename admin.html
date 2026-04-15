@@ -26,6 +26,138 @@
     </style>
     <!-- 載入 LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="liff-init.js"></script>
+<script>
+    // 1. 設定您的 GAS 網址 (務必確認與 index.html 相同)
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+
+    let playersMap = {};
+    let gameSettings = {
+        targetWater: 100,
+        dailyWaterAmount: 10,
+        quizWaterAmount: 5,
+        growthStages: [20, 50, 80],
+        plantImages: {
+            seed: "https://via.placeholder.com/150?text=Seed",
+            sprout: "https://via.placeholder.com/150?text=Sprout",
+            growing: "https://via.placeholder.com/150?text=Growing",
+            bloom: "https://via.placeholder.com/150?text=Bloom"
+        }
+    };
+    let questions = []; // 預設題庫會由 loadAll 載入
+    let selectedId = null;
+
+    function adminMsg(t) {
+        const info = document.getElementById('adminInfo');
+        info.innerText = t;
+        setTimeout(() => { if(info.innerText === t) info.innerText = "系統就緒"; }, 3000);
+    }
+
+    // 2. 修改：從雲端載入所有玩家與設定
+    async function loadAll() {
+        // 先讀取本地緩存作為基礎
+        const lp = localStorage.getItem('berji_players');
+        if (lp) playersMap = JSON.parse(lp);
+        const ls = localStorage.getItem('berji_settings');
+        if (ls) gameSettings = JSON.parse(ls);
+        const lq = localStorage.getItem('berji_questions');
+        if (lq) questions = JSON.parse(lq);
+
+        try {
+            adminMsg("正在同步雲端數據...");
+            const response = await fetch(GAS_URL);
+            const cloudData = await response.json();
+            
+            // 將 Google 試算表陣列轉回玩家物件
+            // 欄位順序：userId, water, dailyCount, lastWaterTime, lastResetDate
+            if (cloudData && cloudData.length > 1) {
+                cloudData.slice(1).forEach(row => {
+                    const [uid, water, count, time, reset] = row;
+                    if (uid) {
+                        playersMap[uid] = playersMap[uid] || { displayName: "LINE玩家", pictureUrl: "" };
+                        playersMap[uid].water = parseFloat(water) || 0;
+                        playersMap[uid].dailyCount = parseInt(count) || 0;
+                        playersMap[uid].lastWaterTime = time;
+                        playersMap[uid].lastResetDate = reset;
+                    }
+                });
+                adminMsg("雲端資料同步成功");
+            }
+        } catch (e) {
+            console.error("雲端讀取錯誤:", e);
+            adminMsg("雲端連線失敗，改顯示本地備份");
+        }
+
+        renderAdminTable();
+        updatePlayerSelect();
+    }
+
+    // 3. 修改：資料同步函式
+    async function persistAll() {
+        localStorage.setItem('berji_players', JSON.stringify(playersMap));
+        localStorage.setItem('berji_settings', JSON.stringify(gameSettings));
+        localStorage.setItem('berji_questions', JSON.stringify(questions));
+
+        // 如果後台有選擇特定玩家進行手動修改，則同步回雲端
+        if (selectedId && playersMap[selectedId]) {
+            const p = playersMap[selectedId];
+            try {
+                await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        userId: selectedId,
+                        water: p.water,
+                        dailyCount: p.dailyCount,
+                        lastWaterTime: p.lastWaterTime,
+                        lastResetDate: p.lastResetDate
+                    })
+                });
+            } catch (e) { console.error("後台同步雲端失敗"); }
+        }
+    }
+
+    function renderAdminTable() {
+        const tbody = document.querySelector('#playerTable tbody');
+        tbody.innerHTML = "";
+        Object.keys(playersMap).forEach(id => {
+            const p = playersMap[id];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><img src="${p.pictureUrl || ''}" width="30" style="border-radius:50%"> ${p.displayName || '未登入'}</td>
+                <td>${id}</td>
+                <td>${p.water.toFixed(1)} / ${gameSettings.targetWater}</td>
+                <td>${p.dailyCount || 0} / 3</td>
+                <td><button class="admin-btn" onclick="selectPlayer('${id}')">管理</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function selectPlayer(id) {
+        selectedId = id;
+        const p = playersMap[id];
+        document.getElementById('selectedPlayerName').innerText = p.displayName || id;
+        adminMsg(`已選擇玩家: ${p.displayName || id}`);
+    }
+
+    // 手動加水功能
+    async function addWaterToPlayer() {
+        if (!selectedId) { alert("請先從表格選擇玩家"); return; }
+        const addVal = parseFloat(document.getElementById('manualWaterAmount').value) || 0;
+        playersMap[selectedId].water += addVal;
+        
+        await persistAll(); // 存檔並同步雲端
+        renderAdminTable();
+        adminMsg(`成功為玩家手動增加 ${addVal} 滴水`);
+    }
+
+    // 其餘原本的設定儲存功能 (saveSettings, updateQuestions 等) 請保留原本邏輯，只需在結尾呼叫 persistAll() 即可。
+    
+    // 初始化
+    window.onload = loadAll;
+</script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
 <div class="admin-container">
