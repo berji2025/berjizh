@@ -29,71 +29,6 @@
         .small-note { font-size: 0.7rem; margin-top: 6px; color: #a5713a; }
         .claim-history { background: #e8dcc8; border-radius: 28px; padding: 8px 12px; margin-top: 10px; font-size: 0.7rem; text-align: left; max-height: 100px; overflow-y: auto; }
     </style>
-    <script>
-    // 1. 定義您的雲端網址
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
-
-    // 2. 修正澆水邏輯 (保留您原有的動畫 addWaterAndSplash)
-    async function dailyWaterPreview() {
-        if (!previewLineId) { showPreviewMsg("請登入 LINE 綁定玩家身分"); return; }
-
-        const now = new Date();
-        const today = now.toLocaleDateString('zh-TW');
-
-        // 跨日檢查：重置每日次數
-        if (previewPlayerData.lastResetDate !== today) {
-            previewPlayerData.dailyCount = 0;
-            previewPlayerData.lastResetDate = today;
-        }
-
-        // 檢查次數限制
-        if (previewPlayerData.dailyCount >= 3) {
-            showPreviewMsg("今日 3 次澆水已達上限 (3/3)！");
-            return;
-        }
-
-        // 檢查冷卻時間 (8 小時)
-        if (previewPlayerData.lastWaterTime) {
-            const lastTime = new Date(previewPlayerData.lastWaterTime);
-            const hoursPassed = (now - lastTime) / (1000 * 60 * 60);
-            if (hoursPassed < 8) {
-                const remain = (8 - hoursPassed).toFixed(1);
-                showPreviewMsg(`花朵還不渴，請等待 ${remain} 小時再澆水`);
-                return;
-            }
-        }
-
-        // 執行加水與您的動畫模組
-        previewPlayerData.dailyCount++;
-        previewPlayerData.lastWaterTime = now.toISOString();
-        
-        // 此處呼叫您原本定義好的動畫函式
-        addWaterAndSplash(gameSettings.dailyWaterAmount, 'daily');
-        
-        showPreviewMsg(`💧 澆水成功！(今日第 ${previewPlayerData.dailyCount} 次)`);
-        
-        // 同步到雲端
-        await syncToCloud();
-    }
-
-    // 3. 雲端同步函式
-    async function syncToCloud() {
-        localStorage.setItem('berji_players', JSON.stringify(playersMap));
-        try {
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    userId: previewLineId,
-                    water: previewPlayerData.water,
-                    dailyCount: previewPlayerData.dailyCount,
-                    lastWaterTime: previewPlayerData.lastWaterTime,
-                    lastResetDate: previewPlayerData.lastResetDate
-                })
-            });
-        } catch(e) { console.error("雲端同步異常"); }
-    }
-</script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="liff-init.js"></script>
 </head>
@@ -336,35 +271,6 @@
         });
     }
 
-    async function initGame() { 
-    // --- 1. 關鍵：強迫從雲端抓取管理員設定 ---
-    try {
-        const response = await fetch(GAS_URL); // 去 GAS 抓你在後台存進試算表的資料
-        const cloudData = await response.json();
-        
-        if (cloudData.config) {
-            // 同步外觀 (顏色、種類)
-            if (cloudData.config.appearance) {
-                plantAppearance = { ...plantAppearance, ...cloudData.config.appearance };
-            }
-            // 同步規則 (目標水量、每日水量)
-            if (cloudData.config.settings) {
-                gameSettings = { ...gameSettings, ...cloudData.config.settings };
-                // 同步更新 UI 上的數字
-                document.getElementById('targetWater').innerText = gameSettings.targetWater;
-            }
-            // 同步題庫
-            if (cloudData.config.questions) {
-                gameSettings.questionBank = cloudData.config.questions;
-            }
-        }
-    } catch (e) {
-        console.warn("無法取得雲端配置，改讀取本地備份");
-        // 如果雲端抓不到，才讀取原本的 LocalStorage
-        loadGameSettings(); 
-    }
-
-    // --- 2. 接著才進行原有的 Canvas 與 LINE 初始化 ---
     function initGame() { 
         loadGameSettings(); 
         const rawPlayers=localStorage.getItem(STORAGE_PLAYERS); 
