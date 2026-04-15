@@ -283,59 +283,68 @@
 
     function getRandomQuestion() { const bank=gameSettings.questionBank; if(!bank.length) return { text:"護膚知識", options:["選項A","B","C"], correct:0 }; return {...bank[Math.floor(Math.random()*bank.length)]}; }
     function renderQuestion() { if(!currentQuestionObj) currentQuestionObj=getRandomQuestion(); document.getElementById('questionText').innerText=currentQuestionObj.text; const container=document.getElementById('optionsContainer'); container.innerHTML=""; currentQuestionObj.options.forEach((opt,idx)=>{ const div=document.createElement('div'); div.className='quiz-opt'; div.innerText=`${String.fromCharCode(65+idx)}. ${opt}`; div.onclick=()=>{ document.querySelectorAll('#optionsContainer .quiz-opt').forEach(el=>el.classList.remove('selected')); div.classList.add('selected'); selectedOptionIdx=idx; document.getElementById('quizFeedback').innerHTML="已選取答案"; }; container.appendChild(div); }); document.getElementById('quizFeedback').innerHTML=`答對可得 ${gameSettings.quizRewardAmount} 滴水！`; }
-    function submitQuiz() { if(!currentPlayerData){ alert("請先登入LINE"); return; } if(currentPlayerData.hasBloomed){ document.getElementById('quizFeedback').innerHTML="已開花，領取後可重新栽種"; return; } if(selectedOptionIdx===null){ document.getElementById('quizFeedback').innerHTML="請選擇答案"; return; } const isCorrect=(selectedOptionIdx===currentQuestionObj.correct); if(isCorrect){ addWater(gameSettings.quizRewardAmount, 'quiz'); } else { document.getElementById('quizFeedback').innerHTML=`❌ 答錯！ 正確：${currentQuestionObj.options[currentQuestionObj.correct]}`; } currentQuestionObj=getRandomQuestion(); selectedOptionIdx=null; renderQuestion(); }
-    function showQuizPanel() { if(!currentPlayerData){ alert("請先登入LINE"); return; } document.getElementById('quizPanel').style.display="block"; if(!currentQuestionObj) currentQuestionObj=getRandomQuestion(); renderQuestion(); }
-    function resetAndReplant() { if(!currentPlayerData) return; currentPlayerData.water=0; currentPlayerData.hasBloomed=false; currentPlayerData.lastDailyDate=null; persistPlayerData(); updateUI(); document.getElementById('quizFeedback').innerHTML="🌱 已重新栽種，花朵重生！繼續澆水吧～"; }
-    function claimGift() { if(!currentPlayerData){ alert("請先登入LINE"); return; } if(!currentPlayerData.hasBloomed){ document.getElementById('giftResult').innerHTML="花朵尚未盛開，無法領取"; return; } const link=gameSettings.giftCouponLink; const today=new Date().toLocaleString('zh-TW'); if(!currentPlayerData.claimHistory) currentPlayerData.claimHistory=[]; currentPlayerData.claimHistory.push({ date:today, giftLink:link }); currentPlayerData.totalClaims=(currentPlayerData.totalClaims||0)+1; persistPlayerData(); updateUI(); window.open(link,"_blank"); document.getElementById('giftResult').innerHTML=`✅ 第${currentPlayerData.totalClaims}次領取成功！`; }
+  async function initGame() { 
+        // 1. 強迫從雲端抓取管理員設定 (同步後台修改的內容)
+        try {
+            const response = await fetch(GAS_URL); 
+            const cloudData = await response.json();
+            
+            if (cloudData.config) {
+                // 同步外觀 (顏色、種類)
+                if (cloudData.config.appearance) {
+                    plantAppearance = { ...plantAppearance, ...cloudData.config.appearance };
+                }
+                // 同步規則 (目標水量、每日水量、兌換連結)
+                if (cloudData.config.settings) {
+                    gameSettings = { ...gameSettings, ...cloudData.config.settings };
+                    document.getElementById('targetWater').innerText = gameSettings.targetWater;
+                }
+                // 同步題庫 (對接後台 questions 變數)
+                if (cloudData.config.questions) {
+                    gameSettings.questionBank = cloudData.config.questions;
+                }
+            }
+        } catch (e) {
+            console.warn("無法取得雲端配置，改讀取本地備份");
+            loadGameSettings(); 
+        }
 
-    function persistPlayerData() { 
-        const obj={}; 
-        for(let [id,data] of playersMap.entries()) obj[id]=data; 
-        localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(obj)); 
-    }
-    
-    function loadGameSettings() { 
-        const raw=localStorage.getItem(STORAGE_SETTINGS); 
-        if(raw){ 
-            try{ 
-                const saved=JSON.parse(raw); 
-                gameSettings={...gameSettings,...saved}; 
-                if(!gameSettings.questionBank?.length) gameSettings.questionBank=[...DEFAULT_QUESTION_BANK]; 
+        // 2. 初始化本地玩家進度
+        const rawPlayers = localStorage.getItem(STORAGE_PLAYERS); 
+        if(rawPlayers){ 
+            try { 
+                const obj = JSON.parse(rawPlayers); 
+                playersMap.clear(); 
+                for(let [id, val] of Object.entries(obj)) playersMap.set(id, val); 
             } catch(e){} 
         } 
-        document.getElementById('targetWater').innerText=gameSettings.targetWater; 
-    }
 
-    // 修正後的綁定邏輯
-    function oneKeyBind() {
-        if(!window.liff){ alert("LINE套件載入中，請稍後"); return; }
-        if(!liff.isLoggedIn()){
-            liff.login();
-            return;
+        // 3. 畫布初始化
+        canvas = document.getElementById('gameCanvas'); 
+        if(canvas){ 
+            canvas.width = 340; 
+            canvas.height = 230; 
+            ctx = canvas.getContext('2d'); 
+            initFallingParticles(); 
+            animateCanvas(); 
+        } 
+
+        // 4. 綁定按鈕事件
+        document.getElementById('dailyBtn').onclick = dailyWater; 
+        document.getElementById('quizBtn').onclick = showQuizPanel; 
+        document.getElementById('submitBtn').onclick = submitQuiz; 
+        document.getElementById('lineBindBtn').onclick = oneKeyBind; 
+        document.getElementById('claimGiftBtn').onclick = claimGift; 
+        document.getElementById('resetPlantBtn').onclick = resetAndReplant; 
+        
+        // 5. LINE LIFF 自動登入檢查
+        if(window.liff && liff.isLoggedIn()){
+            oneKeyBind();
         }
-        liff.getProfile().then(profile => {
-            const realLineId = profile.userId;
-            if(playersMap.has(realLineId)){
-                currentPlayerData = playersMap.get(realLineId);
-            } else {
-                const newPlayer = { water: 0, hasBloomed: false, lastDailyDate: null, claimHistory: [], totalClaims: 0 };
-                playersMap.set(realLineId, newPlayer);
-                currentPlayerData = newPlayer;
-                persistPlayerData();
-            }
-            currentLineId = realLineId;
-            document.getElementById('lineMsg').innerHTML = `✅ 綁定成功！ LINE ID: ${realLineId.substring(0,12)}...`;
-            document.getElementById('lineBindBtn').disabled = true;
-            document.getElementById('lineBindBtn').innerText = "🔗 已登入";
-            updateUI();
-        }).catch(err => {
-            console.error(err);
-            alert("取得LINE資料失敗，請重新登入");
-            liff.logout();
-            liff.login();
-        });
     }
 
+    // 啟動遊戲
+    window.onload = initGame;
     async function initGame() { 
     // --- 1. 關鍵：強迫從雲端抓取管理員設定 ---
     try {
