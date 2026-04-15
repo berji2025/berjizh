@@ -1,222 +1,249 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>berji 品牌活動管理後台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>護膚花園 - 整合管理後台</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; color: #333; }
-        .admin-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { border-left: 4px solid #8e735b; padding-left: 10px; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background: #8e735b; color: white; }
-        .admin-btn { background: #8e735b; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
-        .admin-btn:hover { background: #765f4b; }
-        textarea { width: 100%; height: 150px; margin-top: 10px; font-family: monospace; }
-        .info-msg { color: #8e735b; font-weight: bold; margin-bottom: 10px; display: block; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #d4e8cf; font-family: 'Segoe UI', 'Roboto', 'Noto Sans TC', sans-serif; padding: 20px; }
+        .admin-container { max-width: 1200px; margin: 0 auto; background: #fffcf0; border-radius: 48px; padding: 24px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
+        .admin-title { font-size: 1.8rem; font-weight: bold; color: #4c6e2c; margin-bottom: 20px; border-bottom: 2px solid #e2cfaa; padding-bottom: 10px; }
+        .admin-section { margin-bottom: 28px; border-bottom: 2px dashed #e2cfaa; padding-bottom: 18px; }
+        .flex-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+        label { font-weight: 600; display: block; margin-bottom: 4px; }
+        input, textarea, select { padding: 8px 12px; border-radius: 40px; border: 1px solid #c9aa6f; background: white; width: 100%; }
+        .admin-btn { background: #7ca85a; color: white; border: none; padding: 8px 18px; border-radius: 40px; cursor: pointer; margin-top: 6px; margin-right: 8px; }
+        .admin-btn-danger { background: #c73f1e; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 20px; overflow: hidden; margin-top: 12px; }
+        th, td { padding: 10px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        th { background: #e9dbbd; }
+        .game-link-box { background: #e9e2cf; border-radius: 40px; padding: 12px; text-align: center; margin-top: 8px; word-break: break-all; }
+        textarea { font-family: monospace; border-radius: 24px; }
+        .player-reset-btn { background: #e0874a; border: none; border-radius: 30px; padding: 4px 12px; cursor: pointer; color: white; }
+        .success-msg { background: #c8e6c9; color: #2e7d32; padding: 8px 16px; border-radius: 30px; margin-top: 10px; }
+        .error-msg { background: #ffcdd2; color: #c62828; padding: 8px 16px; border-radius: 30px; margin-top: 10px; }
     </style>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
+<div class="admin-container">
+    <div class="admin-title">🌸 護膚花園・全功能管理中心</div>
+    
+    <div id="adminInfo" style="background:#e6ddb3; border-radius:30px; padding:8px; margin-bottom:15px; text-align:center; font-weight:bold;">系統就緒</div>
 
-    <div class="admin-card">
-        <h2>系統狀態</h2>
-        <span id="adminInfo" class="info-msg">正在載入系統...</span>
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">🔗 快速連結</div>
+        <div class="game-link-box">
+            玩家連結：<a href="https://berji2025.github.io/berjizh/" target="_blank">點此開啟</a>
+            <button onclick="copyToClipboard('https://berji2025.github.io/berjizh/')" class="admin-btn">📋 複製連結</button>
+        </div>
     </div>
 
-    <div class="admin-card">
-        <h2>玩家進度監控</h2>
-        <table id="playerTable">
-            <thead>
-                <tr>
-                    <th>玩家</th>
-                    <th>LINE ID</th>
-                    <th>目前水量 / 目標</th>
-                    <th>今日次數</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">🎨 植物外觀設定</div>
+        <div class="flex-row">
+            <div style="flex:1"><label>🌿 莖顏色</label><input type="color" id="stemColor" value="#5a8f4c"></div>
+            <div style="flex:1"><label>🍃 葉子顏色</label><input type="color" id="leafColor" value="#6fbf4c"></div>
+            <div style="flex:1"><label>🌸 花朵主色</label><input type="color" id="flowerColor" value="#ffaa88"></div>
+            <div style="flex:1"><label>🌸 花蕊顏色</label><input type="color" id="stamenColor" value="#dd8844"></div>
+        </div>
+        <div class="flex-row">
+            <div style="flex:1"><label>🌱 花種</label>
+                <select id="flowerTypeSelect">
+                    <option value="rose">🌹 玫瑰</option>
+                    <option value="cherry">🌸 櫻花</option>
+                    <option value="sunflower">🌻 向日葵</option>
+                    <option value="lotus">🪷 蓮花</option>
+                </select>
+            </div>
+            <div style="flex:1"><label>🍂 飄落數量</label><input type="number" id="petalCount" value="10"></div>
+            <div style="flex:1"><label>🌬️ 速度</label><input type="range" id="fallSpeed" min="0.5" max="2.5" step="0.1" value="1.2"></div>
+        </div>
+        <button class="admin-btn" onclick="saveAppearance()">💾 儲存外觀設定</button>
     </div>
 
-    <div class="admin-card">
-        <h2>遊戲參數設定</h2>
-        <label>通關目標總水量：</label>
-        <input type="number" id="targetWater" value="100"> <br><br>
-        <label>每日澆水獲得水量：</label>
-        <input type="number" id="dailyWaterAmount" value="10"> <br><br>
-        <button class="admin-btn" onclick="saveSettings()">儲存並同步規則至雲端</button>
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">⚙️ 遊戲核心數值</div>
+        <div class="flex-row">
+            <div style="flex:1"><label>🌸 目標水量</label><input type="number" id="targetWaterSetting" value="660"></div>
+            <div style="flex:1"><label>💧 每日澆水給水</label><input type="number" id="dailyWaterAmount" value="20"></div>
+            <div style="flex:1"><label>📖 答題正確給水</label><input type="number" id="quizRewardAmount" value="50"></div>
+        </div>
+        <div class="flex-row">
+            <div style="flex:3"><label>🎁 贈品兌換連結 (LINE連結)</label><input type="url" id="giftCouponUrl" value="https://lin.ee/example"></div>
+        </div>
+        <button class="admin-btn" onclick="saveGameSettings()">💾 儲存並同步至雲端</button>
     </div>
 
-    <div class="admin-card">
-        <h2>護膚題庫編輯 (格式: 題目|選項1|選項2|選項3|選項4|正確索引)</h2>
-        <p style="font-size: 0.8em; color: #666;">正確索引範例：0代表第一個選項正確，1代表第二個，以此類推。</p>
-        <textarea id="questionsInput" placeholder="範例： berji 是哪國品牌？|台灣|日本|韓國|美國|0"></textarea>
-        <br>
-        <button class="admin-btn" onclick="updateQuestions()">更新題庫並同步至雲端</button>
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">📚 護膚題庫管理</div>
+        <textarea id="questionsEditor" placeholder='以 JSON 格式編輯'></textarea>
+        <button class="admin-btn" onclick="saveQuestions()">✏️ 更新雲端題庫</button>
+        <button class="admin-btn" onclick="resetDefaultQuestions()">↺ 重置預設</button>
     </div>
 
-    <div class="admin-card">
-        <h2>手動調整玩家數據</h2>
-        <p>當前選取玩家：<span id="selectedPlayerName" style="color:red; font-weight:bold;">無</span></p>
-        <input type="number" id="manualWaterAmount" placeholder="輸入要增加的水量 (例: 5 或 -5)">
-        <button class="admin-btn" onclick="addWaterToPlayer()">確認調整</button>
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">👥 玩家資料庫 (雲端同步)</div>
+        <div style="overflow-x: auto;">
+            <table id="playersTable">
+                <thead><tr><th>玩家</th><th>ID</th><th>水量 / 目標</th><th>今日</th><th>最後領取</th><th>操作</th></tr></thead>
+                <tbody id="playersTbody"></tbody>
+            </table>
+        </div>
     </div>
 
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script src="liff-init.js"></script>
-    <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+    <div class="admin-section">
+        <div class="admin-title" style="font-size:1.2rem;">🛠️ 手動修改玩家</div>
+        <div class="flex-row">
+            <span id="selectedPlayerName" style="font-weight:bold; color:#c73f1e;">尚未選擇玩家</span>
+            <input type="number" id="manualWaterVal" placeholder="輸入增減數值 (如 10 或 -10)" style="width:200px;">
+            <button class="admin-btn" onclick="manualAdjustWater()">確認調整</button>
+        </div>
+    </div>
+</div>
 
-        let playersMap = {};
-        let gameSettings = { targetWater: 100, dailyWaterAmount: 10 };
-        let questions = [];
-        let selectedId = null;
+<script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzqmnvjeRC11bkBH4sHq_zpXkFQi8gF4HxtWPzg-pzuwdhzqoCU2JJxkwP-QeUD5b4jaw/exec";
+    
+    let playersMap = {};
+    let gameSettings = { targetWater: 660, dailyWaterAmount: 20, quizRewardAmount: 50, giftCouponLink: "https://lin.ee/example" };
+    let plantAppearance = { stemColor: "#5a8f4c", leafColor: "#6fbf4c", flowerColor: "#ffaa88", stamenColor: "#dd8844", flowerType: "rose", petalCount: 10, fallSpeed: 1.2 };
+    let selectedId = null;
 
-        function adminMsg(t) {
-            document.getElementById('adminInfo').innerText = t;
-            setTimeout(() => { document.getElementById('adminInfo').innerText = "系統就緒"; }, 3000);
-        }
+    function adminMsg(msg) {
+        document.getElementById('adminInfo').innerText = msg;
+        setTimeout(() => { document.getElementById('adminInfo').innerText = "系統就緒"; }, 3000);
+    }
 
-        // 核心載入邏輯：同時抓取玩家資料與遊戲規則
-        async function loadAll() {
-            try {
-                adminMsg("🔄 正在從雲端抓取數據與題庫...");
-                const response = await fetch(GAS_URL);
-                const data = await response.json();
-                
-                // 1. 處理玩家資料
-                if (data.players && data.players.length > 1) {
-                    data.players.slice(1).forEach(row => {
-                        const [uid, water, count, time, reset] = row;
-                        if (uid) {
-                            playersMap[uid] = {
-                                displayName: "LINE玩家", 
-                                water: parseFloat(water) || 0,
-                                dailyCount: parseInt(count) || 0,
-                                lastWaterTime: time,
-                                lastResetDate: reset
-                            };
-                        }
-                    });
-                }
+    async function loadAll() {
+        try {
+            adminMsg("🔄 正在連線雲端資料庫...");
+            const response = await fetch(GAS_URL);
+            const data = await response.json();
 
-                // 2. ⭐ 關鍵：處理並顯示雲端題庫與設定
-                if (data.config) {
-                    gameSettings = data.config;
-                    if (data.config.questions) questions = data.config.questions;
-
-                    // 填入輸入框
-                    document.getElementById('targetWater').value = gameSettings.targetWater;
-                    document.getElementById('dailyWaterAmount').value = gameSettings.dailyWaterAmount;
-                    
-                    // 將題庫物件轉回文字顯示在 Textarea
-                    const qInput = document.getElementById('questionsInput');
-                    if (questions.length > 0) {
-                        qInput.value = questions.map(q => 
-                            `${q.q}|${q.options[0]}|${q.options[1]}|${q.options[2]}|${q.options[3]}|${q.a}`
-                        ).join('\n');
-                    }
-                }
-                adminMsg("✅ 雲端資料同步完成");
-            } catch (e) {
-                adminMsg("⚠️ 雲端連線失敗，目前顯示本地快取");
-            }
-            renderAdminTable();
-        }
-
-        // 儲存規則同步至雲端
-        async function saveSettings() {
-            gameSettings.targetWater = parseFloat(document.getElementById('targetWater').value);
-            gameSettings.dailyWaterAmount = parseFloat(document.getElementById('dailyWaterAmount').value);
-
-            await fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({
-                    type: 'UPDATE_CONFIG',
-                    config: gameSettings
-                })
-            });
-            adminMsg("✅ 設定已同步至雲端，玩家端已更新！");
-        }
-
-        // 更新題庫同步至雲端
-        async function updateQuestions() {
-            const txt = document.getElementById('questionsInput').value;
-            try {
-                const lines = txt.split('\n').filter(l => l.trim() !== "");
-                const newQs = lines.map(line => {
-                    const parts = line.split('|');
-                    if (parts.length < 6) throw new Error("格式錯誤");
-                    return {
-                        q: parts[0].trim(),
-                        options: [parts[1].trim(), parts[2].trim(), parts[3].trim(), parts[4].trim()],
-                        a: parseInt(parts[5]) || 0
-                    };
+            // 1. 同步玩家列表
+            if (data.players) {
+                data.players.slice(1).forEach(row => {
+                    const [uid, water, count, time, reset] = row;
+                    if(uid) playersMap[uid] = { water: parseFloat(water), dailyCount: parseInt(count), lastTime: time, lastReset: reset };
                 });
-                questions = newQs;
-                
-                await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: JSON.stringify({
-                        type: 'UPDATE_CONFIG',
-                        config: { ...gameSettings, questions: questions }
-                    })
-                });
-                adminMsg("✅ 題庫已同步至雲端！");
-            } catch (e) {
-                alert("格式錯誤！請檢查是否每一行都有題目與四個選項，並用 | 隔開。");
             }
-        }
 
-        function renderAdminTable() {
-            const tbody = document.querySelector('#playerTable tbody');
-            tbody.innerHTML = "";
-            Object.keys(playersMap).forEach(id => {
-                const p = playersMap[id];
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${p.displayName}</td>
-                    <td><small>${id}</small></td>
-                    <td>${p.water.toFixed(1)} / ${gameSettings.targetWater}</td>
-                    <td>${p.dailyCount} / 3</td>
-                    <td><button class="admin-btn" onclick="selectPlayer('${id}')">選擇</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function selectPlayer(id) {
-            selectedId = id;
-            document.getElementById('selectedPlayerName').innerText = id;
-            adminMsg(`已選擇玩家: ${id}`);
-        }
-
-        async function addWaterToPlayer() {
-            if (!selectedId) return alert("請先選擇玩家");
-            const val = parseFloat(document.getElementById('manualWaterAmount').value) || 0;
-            playersMap[selectedId].water += val;
+            // 2. 同步遊戲設定
+            if (data.config) {
+                gameSettings = data.config;
+                document.getElementById('targetWaterSetting').value = gameSettings.targetWater;
+                document.getElementById('dailyWaterAmount').value = gameSettings.dailyWaterAmount;
+                document.getElementById('quizRewardAmount').value = gameSettings.quizRewardAmount;
+                document.getElementById('giftCouponUrl').value = gameSettings.giftCouponLink;
+                if(gameSettings.questions) {
+                    document.getElementById('questionsEditor').value = JSON.stringify(gameSettings.questions, null, 2);
+                }
+            }
             
-            // 同步單一玩家數據
+            // 3. 載入外觀 (本地優先)
+            const localApp = localStorage.getItem('berji_appearance');
+            if(localApp) plantAppearance = JSON.parse(localApp);
+            document.getElementById('stemColor').value = plantAppearance.stemColor;
+            document.getElementById('leafColor').value = plantAppearance.leafColor;
+            document.getElementById('flowerColor').value = plantAppearance.flowerColor;
+            document.getElementById('stamenColor').value = plantAppearance.stamenColor;
+            document.getElementById('flowerTypeSelect').value = plantAppearance.flowerType;
+            
+            renderTable();
+            adminMsg("✅ 雲端資料同步完成");
+        } catch(e) { adminMsg("⚠️ 雲端讀取失敗，使用本地存檔"); }
+    }
+
+    async function saveGameSettings() {
+        gameSettings.targetWater = parseInt(document.getElementById('targetWaterSetting').value);
+        gameSettings.dailyWaterAmount = parseInt(document.getElementById('dailyWaterAmount').value);
+        gameSettings.quizRewardAmount = parseInt(document.getElementById('quizRewardAmount').value);
+        gameSettings.giftCouponLink = document.getElementById('giftCouponUrl').value;
+
+        try {
             await fetch(GAS_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({
-                    userId: selectedId,
-                    water: playersMap[selectedId].water,
-                    dailyCount: playersMap[selectedId].dailyCount,
-                    lastWaterTime: playersMap[selectedId].lastWaterTime,
-                    lastResetDate: playersMap[selectedId].lastResetDate
-                })
+                body: JSON.stringify({ type: 'UPDATE_CONFIG', config: gameSettings })
             });
-            renderAdminTable();
-            adminMsg("✅ 玩家水量已手動更新至雲端");
-        }
+            adminMsg("✅ 設定已同步至雲端");
+        } catch(e) { adminMsg("❌ 同步失敗"); }
+    }
 
-        window.onload = loadAll;
-    </script>
+    async function saveQuestions() {
+        try {
+            const newQs = JSON.parse(document.getElementById('questionsEditor').value);
+            gameSettings.questions = newQs;
+            await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ type: 'UPDATE_CONFIG', config: gameSettings })
+            });
+            adminMsg("✅ 題庫已更新至雲端");
+        } catch(e) { alert("JSON 格式錯誤！"); }
+    }
+
+    function saveAppearance() {
+        plantAppearance.stemColor = document.getElementById('stemColor').value;
+        plantAppearance.leafColor = document.getElementById('leafColor').value;
+        plantAppearance.flowerColor = document.getElementById('flowerColor').value;
+        plantAppearance.stamenColor = document.getElementById('stamenColor').value;
+        plantAppearance.flowerType = document.getElementById('flowerTypeSelect').value;
+        localStorage.setItem('berji_appearance', JSON.stringify(plantAppearance));
+        adminMsg("✅ 外觀設定已儲存至本地");
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('playersTbody');
+        tbody.innerHTML = "";
+        Object.keys(playersMap).forEach(id => {
+            const p = playersMap[id];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>玩家</td>
+                <td><small>${id.substring(0,8)}...</small></td>
+                <td>${p.water} / ${gameSettings.targetWater}</td>
+                <td>${p.dailyCount}</td>
+                <td>${p.lastReset || '無'}</td>
+                <td><button class="player-reset-btn" onclick="selectForEdit('${id}')">選擇</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function selectForEdit(id) {
+        selectedId = id;
+        document.getElementById('selectedPlayerName').innerText = "已選取：" + id.substring(0,10) + "...";
+    }
+
+    async function manualAdjustWater() {
+        if(!selectedId) return alert("請先選擇玩家");
+        const val = parseFloat(document.getElementById('manualWaterVal').value) || 0;
+        playersMap[selectedId].water += val;
+        
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                userId: selectedId,
+                water: playersMap[selectedId].water,
+                dailyCount: playersMap[selectedId].dailyCount,
+                lastWaterTime: playersMap[selectedId].lastTime,
+                lastResetDate: playersMap[selectedId].lastReset
+            })
+        });
+        renderTable();
+        adminMsg("✅ 玩家水量已手動調整");
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text);
+        adminMsg("📋 連結已複製");
+    }
+
+    window.onload = loadAll;
+</script>
 </body>
 </html>
