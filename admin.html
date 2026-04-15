@@ -376,6 +376,31 @@
         gameSettings.dailyWaterAmount = parseInt(document.getElementById('dailyWaterAmount').value) || 20;
         gameSettings.quizRewardAmount = parseInt(document.getElementById('quizRewardAmount').value) || 50;
         persistAll();
+    async function saveSettings() {
+    // ...這裡是你原本獲取 input 數值的代碼 (例如 targetWater = ...)
+    gameSettings.targetWater = parseFloat(document.getElementById('targetWater').value);
+    gameSettings.dailyWaterAmount = parseFloat(document.getElementById('dailyWaterAmount').value);
+    gameSettings.quizWaterAmount = parseFloat(document.getElementById('quizWaterAmount').value);
+
+    // 原有的本地儲存
+    persistAll(); 
+
+    // ⭐ 【新增：同步到雲端】
+    // 這樣 index.html 才能抓到新的「目標水量」或「澆水克數」
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                type: 'UPDATE_CONFIG', // 告訴 GAS 這是要改遊戲規則
+                config: gameSettings
+            })
+        });
+        adminMsg("設定已儲存並同步至雲端！");
+    } catch(e) {
+        adminMsg("本地已儲存，但雲端同步失敗");
+    }
+}
         adminMsg("✅ 遊戲設定已儲存");
     }
 
@@ -391,6 +416,26 @@
             if (Array.isArray(newBank) && newBank.length) {
                 gameSettings.questionBank = newBank;
                 persistAll();
+    async function updateQuestions() {
+    // ...原本你處理文本域轉成陣列的代碼...
+    
+    persistAll();
+
+    // ⭐ 【新增：同步題庫到雲端】
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                type: 'UPDATE_CONFIG',
+                config: { ...gameSettings, questions: questions } // 把新題目也傳上去
+            })
+        });
+        adminMsg("題庫已更新至雲端！");
+    } catch(e) {
+        adminMsg("題庫更新失敗");
+    }
+}
                 adminMsg(`✅ 題庫更新成功！共 ${newBank.length} 題`);
             } else throw new Error();
         } catch (e) {
